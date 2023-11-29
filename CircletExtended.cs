@@ -43,13 +43,13 @@ namespace CircletExtended
         public static ConfigEntry<KeyboardShortcut> toggleShadowsShortcut;
         public static ConfigEntry<KeyboardShortcut> toggleSpotShortcut;
 
-        public static bool noModifiersSet = true;
-
         internal static CircletExtended instance;
 
         public const string itemNameHelmetDverger = "HelmetDverger";
         public static int itemHashHelmetDverger = 703889544;
         public static GameObject overloadEffect;
+
+        public static List<int> hotkeys = new List<int>();
 
         /// <summary>
         /// //////
@@ -94,7 +94,7 @@ namespace CircletExtended
                 instance.Logger.LogInfo(data);
         }
 
-        private void ConfigInit()
+        public void ConfigInit()
         {
             config("General", "NexusID", 0, "Nexus mod ID for updates", false);
 
@@ -114,21 +114,25 @@ namespace CircletExtended
             toggleShortcut = config("Hotkeys", "Toggle light", defaultValue: new KeyboardShortcut(KeyCode.UpArrow), "Toggle main light shortcut. [Not Synced with Server]", false);
             toggleSpotShortcut = config("Hotkeys", "Toggle radiance", defaultValue: new KeyboardShortcut(KeyCode.DownArrow), "Toggle spotlight shortcut. [Not Synced with Server]", false);
 
-            increaseIntensityShortcut = config("Hotkeys", "Intensity increase", defaultValue: new KeyboardShortcut(KeyCode.Minus), "Increase intensity shortcut. [Not Synced with Server]", false);
-            decreaseIntensityShortcut = config("Hotkeys", "Intensity decrease", defaultValue: new KeyboardShortcut(KeyCode.Equals), "Decrease intensity shortcut. [Not Synced with Server]", false);
+            increaseIntensityShortcut = config("Hotkeys", "Intensity increase", defaultValue: new KeyboardShortcut(KeyCode.UpArrow, new KeyCode[1] { KeyCode.LeftShift}), "Increase intensity shortcut. [Not Synced with Server]", false);
+            decreaseIntensityShortcut = config("Hotkeys", "Intensity decrease", defaultValue: new KeyboardShortcut(KeyCode.DownArrow, new KeyCode[1] { KeyCode.LeftShift }), "Decrease intensity shortcut. [Not Synced with Server]", false);
             toggleShadowsShortcut = config("Hotkeys", "Toggle shadows", defaultValue: new KeyboardShortcut(KeyCode.Home), "Toggle shadows shortcut. [Not Synced with Server]", false);
             overloadShortcut = config("Hotkeys", "Overload", defaultValue: new KeyboardShortcut(KeyCode.T), "Overload shortcut. [Not Synced with Server]", false);
             
             itemHashHelmetDverger = itemNameHelmetDverger.GetStableHashCode();
 
-            noModifiersSet = noModifiersSet && !widenShortcut.Value.Modifiers.Any();
-            noModifiersSet = noModifiersSet && !narrowShortcut.Value.Modifiers.Any();
-            noModifiersSet = noModifiersSet && !toggleShortcut.Value.Modifiers.Any();
-            noModifiersSet = noModifiersSet && !overloadShortcut.Value.Modifiers.Any();
-            noModifiersSet = noModifiersSet && !increaseIntensityShortcut.Value.Modifiers.Any();
-            noModifiersSet = noModifiersSet && !decreaseIntensityShortcut.Value.Modifiers.Any();
-            noModifiersSet = noModifiersSet && !toggleShadowsShortcut.Value.Modifiers.Any();
-            noModifiersSet = noModifiersSet && !toggleSpotShortcut.Value.Modifiers.Any();
+            Dictionary<int, int> shortcutsModifiers = new Dictionary<int, int>();
+            
+            AddShortcut(shortcutsModifiers, widenShortcut);
+            AddShortcut(shortcutsModifiers, narrowShortcut);
+            AddShortcut(shortcutsModifiers, toggleShortcut);
+            AddShortcut(shortcutsModifiers, toggleSpotShortcut);
+            AddShortcut(shortcutsModifiers, increaseIntensityShortcut);
+            AddShortcut(shortcutsModifiers, decreaseIntensityShortcut);
+            AddShortcut(shortcutsModifiers, toggleShadowsShortcut);
+            AddShortcut(shortcutsModifiers, overloadShortcut);
+
+            hotkeys = shortcutsModifiers.OrderByDescending(x => x.Value).Select(x => x.Key).ToList();
 
             //////////
             ///            
@@ -141,6 +145,11 @@ namespace CircletExtended
             MaxRange = config("General", "Max Range", 15.0f, "The range of the beam at the widest setting");
             PointIntensity = config("General", "Point Intensity", 1.1f, "The intensity of the Dverger light pool on the point light setting.");
             PointRange = config("General", "Point Range", 10.0f, "The range of the Dverger light pool on the point light setting.");
+        }
+
+        private void AddShortcut(Dictionary<int, int> shortcuts, ConfigEntry<KeyboardShortcut> shortcut)
+        {
+            shortcuts.Add(shortcut.Definition.GetHashCode(), shortcut.Value.Modifiers.Count());
         }
 
         ConfigEntry<T> config<T>(string group, string name, T defaultValue, ConfigDescription description, bool synchronizedSetting = true)
