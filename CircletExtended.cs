@@ -7,6 +7,7 @@ using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
 using ServerSync;
+using static PrivilegeManager;
 
 namespace CircletExtended
 {
@@ -51,7 +52,7 @@ namespace CircletExtended
         internal static CircletExtended instance;
 
         public const string itemNameHelmetDverger = "HelmetDverger";
-        public const string itemDropNameHelmetDverget = "$item_helmet_dverger";
+        public const string itemDropNameHelmetDverger = "$item_helmet_dverger";
         public static int itemHashHelmetDverger = 703889544;
         public static GameObject overloadEffect;
 
@@ -192,7 +193,7 @@ namespace CircletExtended
 
                 var removed = ___m_recipes.RemoveAll(x => x.name == itemNameHelmetDverger);
                 if (removed > 0)
-                    LogInfo($" Removed recipe {itemNameHelmetDverger}");
+                    LogInfo($"Removed recipe {itemNameHelmetDverger}");
 
                 CraftingStation station = null;
                 foreach (Recipe _recipe in ObjectDB.instance.m_recipes)
@@ -218,7 +219,7 @@ namespace CircletExtended
                 recipe.m_resources = new Piece.Requirement[1] {new Piece.Requirement()
                 {
                     m_amount = 1,
-                    m_resItem = item
+                    m_resItem = item,
                 }};
 
                 ___m_recipes.Add(recipe);
@@ -233,7 +234,7 @@ namespace CircletExtended
                 if (!modEnabled.Value)
                     return;
 
-                if (__instance.GetPrefabName(__instance.name) != CircletExtended.itemNameHelmetDverger)
+                if (__instance.GetPrefabName(__instance.name) != itemNameHelmetDverger)
                     return;
 
                 PatchCircletItemData(__instance.m_itemData);
@@ -248,7 +249,7 @@ namespace CircletExtended
                 if (!modEnabled.Value)
                     return;
 
-                if (__instance.GetPrefabName(__instance.name) != CircletExtended.itemNameHelmetDverger)
+                if (__instance.GetPrefabName(__instance.name) != itemNameHelmetDverger)
                     return;
 
                 PatchCircletItemData(__instance.m_itemData);
@@ -267,7 +268,7 @@ namespace CircletExtended
                     return;
 
                 List<ItemDrop.ItemData> items = new List<ItemDrop.ItemData>();
-                __instance.GetInventory().GetAllItems(itemDropNameHelmetDverget, items);
+                __instance.GetInventory().GetAllItems(itemDropNameHelmetDverger, items);
 
                 foreach (ItemDrop.ItemData item in items)
                     PatchCircletItemData(item);
@@ -280,5 +281,51 @@ namespace CircletExtended
 
             item.m_shared.m_durabilityPerLevel = durabilityPerLevel.Value;
         }
+
+        [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.DoCrafting))]
+        public class InventoryGui_DoCrafting_CircletUpgrade
+        {
+            public static void Prefix(InventoryGui __instance, ref Recipe ___m_craftRecipe, ref Piece.Requirement[] __state, ItemDrop.ItemData ___m_craftUpgradeItem)
+            {
+                if (!modEnabled.Value)
+                    return;
+
+                if (___m_craftRecipe == null || ___m_craftUpgradeItem == null)
+                    return;
+
+                if (!___m_craftRecipe.m_resources.Any(requirement => requirement.m_resItem.m_itemData.m_shared.m_name == itemDropNameHelmetDverger))
+                    return;
+
+                __state = ___m_craftRecipe.m_resources.ToArray();
+                
+                ___m_craftRecipe.m_resources = ___m_craftRecipe.m_resources.Where(requirement => requirement.m_resItem.GetPrefabName(requirement.m_resItem.name) != itemNameHelmetDverger).ToArray();
+            }
+
+            public static void Postfix(InventoryGui __instance, ref Recipe ___m_craftRecipe, Piece.Requirement[] __state)
+            {
+                if (!modEnabled.Value)
+                    return;
+
+                if (__state == null)
+                    return;
+
+                ___m_craftRecipe.m_resources = __state;
+            }
+        }
+
+        [HarmonyPatch(typeof(Piece.Requirement), nameof(Piece.Requirement.GetAmount))]
+        public class PieceRequirement_GetAmount_CircletUpgrade
+        {
+            public static void Postfix(Piece.Requirement __instance, int qualityLevel, ref int __result)
+            {
+                if (!modEnabled.Value)
+                    return;
+
+                if (__instance.m_resItem.GetPrefabName(__instance.m_resItem.name) == itemNameHelmetDverger)
+                    __result = 1; // qualityLevel > 1 ? 0 : 1;*/
+            }
+        }
+
+
     }
 }
