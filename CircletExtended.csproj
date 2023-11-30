@@ -81,6 +81,11 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+  <Reference Include="mscorlib">
+    <HintPath>F:\Steam\steamapps\common\Valheim\valheim_Data\Managed\mscorlib.dll</HintPath>
+  </Reference>
+</ItemGroup>
+  <ItemGroup>
     <Content Include="Libs\ServerSync.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
