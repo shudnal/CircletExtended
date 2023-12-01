@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Logging;
@@ -7,7 +6,6 @@ using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
 using ServerSync;
-using static PrivilegeManager;
 
 namespace CircletExtended
 {
@@ -31,6 +29,7 @@ namespace CircletExtended
         public static ConfigEntry<bool> enableOverload;
         public static ConfigEntry<bool> enableDemister;
         public static ConfigEntry<bool> enablePutOnTop;
+        public static ConfigEntry<float> demisterRadius; 
 
         public static ConfigEntry<Color> circletColor;
 
@@ -55,10 +54,13 @@ namespace CircletExtended
         public const string itemDropNameHelmetDverger = "$item_helmet_dverger";
         public static int itemHashHelmetDverger = 703889544;
         public static GameObject overloadEffect;
+        public static int demisterEffectHash = 0;
 
         public const int maxQuality = 4;
 
         public static List<int> hotkeys = new List<int>();
+
+        public static Dictionary<int, Piece.Requirement[]> recipeRequirements = new Dictionary<int, Piece.Requirement[]>();
 
         /// <summary>
         /// //////
@@ -121,7 +123,7 @@ namespace CircletExtended
             enableOverload = config("Circlet - Features", "Enable overload", defaultValue: true, "Enables overload. Press hotkey to blind opponents with a bright flash at the cost of some circlet durability");
             enableDemister = config("Circlet - Features", "Enable demister", defaultValue: true, "Enables demister. Spawn a little wisp to push away the mists");
             enablePutOnTop = config("Circlet - Features", "Enable put on top", defaultValue: true, "Enables put on top. Equip circlet without using a helmet slot.");
-            enableDemister = config("Circlet - Features", "Demister radius", defaultValue: true, "Demister effect radius. Default wisp radius is 6.");
+            demisterRadius = config("Circlet - Features", "Demister radius", defaultValue: 6f, "Demister effect radius. Default wisp radius is 6.");
 
             widenShortcut = config("Hotkeys", "Beam widen", defaultValue: new KeyboardShortcut(KeyCode.RightArrow), "Widen beam shortcut. [Not Synced with Server]", false);
             narrowShortcut = config("Hotkeys", "Beam narrow", defaultValue: new KeyboardShortcut(KeyCode.LeftArrow), "Narrow beam shortcut. [Not Synced with Server]", false);
@@ -135,6 +137,7 @@ namespace CircletExtended
             toggleSpotShortcut = config("Hotkeys - Extra", "Toggle radiance", defaultValue: new KeyboardShortcut(KeyCode.RightArrow, new KeyCode[1] { KeyCode.LeftShift }), "Toggle spotlight shortcut. [Not Synced with Server]", false);
 
             itemHashHelmetDverger = itemNameHelmetDverger.GetStableHashCode();
+            demisterEffectHash = "Demister".GetStableHashCode();
 
             Dictionary<int, int> shortcutsModifiers = new Dictionary<int, int>();
 
@@ -146,6 +149,7 @@ namespace CircletExtended
             AddShortcut(shortcutsModifiers, decreaseIntensityShortcut);
             AddShortcut(shortcutsModifiers, toggleShadowsShortcut);
             AddShortcut(shortcutsModifiers, overloadShortcut);
+            AddShortcut(shortcutsModifiers, toggleDemisterShortcut);
 
             hotkeys = shortcutsModifiers.OrderByDescending(x => x.Value).Select(x => x.Key).ToList();
 
@@ -179,153 +183,23 @@ namespace CircletExtended
 
         ConfigEntry<T> config<T>(string group, string name, T defaultValue, string description, bool synchronizedSetting = true) => config(group, name, defaultValue, new ConfigDescription(description), synchronizedSetting);
 
-        [HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.Awake))]
-        public static class ObjectDB_Awake_CircletStat
-        {
-            private static void Postfix(ObjectDB __instance, ref List<Recipe> ___m_recipes)
-            {
-                if (!modEnabled.Value)
-                    return;
-
-                GameObject prefab = ObjectDB.instance.GetItemPrefab(itemHashHelmetDverger);
-                if (prefab == null)
-                    return;
-
-                var removed = ___m_recipes.RemoveAll(x => x.name == itemNameHelmetDverger);
-                if (removed > 0)
-                    LogInfo($"Removed recipe {itemNameHelmetDverger}");
-
-                CraftingStation station = null;
-                foreach (Recipe _recipe in ObjectDB.instance.m_recipes)
-                    if (_recipe.m_craftingStation != null && _recipe.m_craftingStation.name != "$piece_forge")
-                    {
-                        station = _recipe.m_craftingStation;
-                        break;
-                    }
-
-                ItemDrop item = prefab.GetComponent<ItemDrop>();
-                PatchCircletItemData(item.m_itemData);
-
-                Recipe recipe = ScriptableObject.CreateInstance<Recipe>();
-                recipe.name = itemNameHelmetDverger;
-                recipe.m_amount = 1;
-                recipe.m_minStationLevel = 1;
-                recipe.m_item = item;
-                recipe.m_enabled = true;
-
-                if (station != null)
-                    recipe.m_craftingStation = station;
-
-                recipe.m_resources = new Piece.Requirement[1] {new Piece.Requirement()
-                {
-                    m_amount = 1,
-                    m_resItem = item,
-                }};
-
-                ___m_recipes.Add(recipe);
-            }
-        }
-
-        [HarmonyPatch(typeof(ItemDrop), nameof(ItemDrop.Awake))]
-        public static class ItemDrop_Awake_CircletStats
-        {
-            private static void Postfix(ref ItemDrop __instance)
-            {
-                if (!modEnabled.Value)
-                    return;
-
-                if (__instance.GetPrefabName(__instance.name) != itemNameHelmetDverger)
-                    return;
-
-                PatchCircletItemData(__instance.m_itemData);
-            }
-        }
-
-        [HarmonyPatch(typeof(ItemDrop), nameof(ItemDrop.SlowUpdate))]
-        private static class ItemDrop_SlowUpdate_CircletStats
-        {
-            private static void Postfix(ref ItemDrop __instance)
-            {
-                if (!modEnabled.Value)
-                    return;
-
-                if (__instance.GetPrefabName(__instance.name) != itemNameHelmetDverger)
-                    return;
-
-                PatchCircletItemData(__instance.m_itemData);
-            }
-        }
-
-        [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
-        public class Player_OnSpawned_CircletStats
-        {
-            public static void Postfix(Player __instance)
-            {
-                if (!modEnabled.Value)
-                    return;
-
-                if (__instance != Player.m_localPlayer)
-                    return;
-
-                List<ItemDrop.ItemData> items = new List<ItemDrop.ItemData>();
-                __instance.GetInventory().GetAllItems(itemDropNameHelmetDverger, items);
-
-                foreach (ItemDrop.ItemData item in items)
-                    PatchCircletItemData(item);
-            }
-        }
-
-        private static void PatchCircletItemData(ItemDrop.ItemData item)
+        public static void PatchCircletItemData(ItemDrop.ItemData item)
         {
             item.m_shared.m_maxQuality = 4;
 
             item.m_shared.m_durabilityPerLevel = durabilityPerLevel.Value;
         }
 
-        [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.DoCrafting))]
-        public class InventoryGui_DoCrafting_CircletUpgrade
+        public static void LogReqs(string eventname, Piece.Requirement[] requirements, int qualityLevel)
         {
-            public static void Prefix(InventoryGui __instance, ref Recipe ___m_craftRecipe, ref Piece.Requirement[] __state, ItemDrop.ItemData ___m_craftUpgradeItem)
+            foreach (Piece.Requirement requirement in requirements)
             {
-                if (!modEnabled.Value)
-                    return;
-
-                if (___m_craftRecipe == null || ___m_craftUpgradeItem == null)
-                    return;
-
-                if (!___m_craftRecipe.m_resources.Any(requirement => requirement.m_resItem.m_itemData.m_shared.m_name == itemDropNameHelmetDverger))
-                    return;
-
-                __state = ___m_craftRecipe.m_resources.ToArray();
-                
-                ___m_craftRecipe.m_resources = ___m_craftRecipe.m_resources.Where(requirement => requirement.m_resItem.GetPrefabName(requirement.m_resItem.name) != itemNameHelmetDverger).ToArray();
+                if ((bool)requirement.m_resItem)
+                {
+                    LogInfo($"{eventname} {qualityLevel} {requirement.m_resItem.m_itemData.m_shared.m_name} {requirement.GetAmount(qualityLevel)}");
+                }
             }
 
-            public static void Postfix(InventoryGui __instance, ref Recipe ___m_craftRecipe, Piece.Requirement[] __state)
-            {
-                if (!modEnabled.Value)
-                    return;
-
-                if (__state == null)
-                    return;
-
-                ___m_craftRecipe.m_resources = __state;
-            }
         }
-
-        [HarmonyPatch(typeof(Piece.Requirement), nameof(Piece.Requirement.GetAmount))]
-        public class PieceRequirement_GetAmount_CircletUpgrade
-        {
-            public static void Postfix(Piece.Requirement __instance, int qualityLevel, ref int __result)
-            {
-                if (!modEnabled.Value)
-                    return;
-
-                if (__instance.m_resItem.GetPrefabName(__instance.m_resItem.name) == itemNameHelmetDverger)
-                    __result = 1; // qualityLevel > 1 ? 0 : 1;*/
-            }
-        }
-
-
     }
 }
