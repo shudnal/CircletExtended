@@ -206,6 +206,8 @@ namespace CircletExtended
                 player.ConsumeResources(___m_craftRecipe.m_resources, 1);
 
             ___m_craftRecipe.m_resources = __state.Value.ToArray();
+
+            PatchCircletItemData(___m_craftUpgradeItem);
         }
     }
 

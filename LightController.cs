@@ -6,6 +6,7 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 using BepInEx.Configuration;
 using static CircletExtended.CircletExtended;
+using System.Collections.Generic;
 
 namespace CircletExtended
 {
@@ -67,7 +68,7 @@ namespace CircletExtended
 
         private void Update()
         {
-            if (!CircletExtended.modEnabled.Value)
+            if (!modEnabled.Value)
                 return;
 
             GetSpotLight();
@@ -75,7 +76,7 @@ namespace CircletExtended
             var player = Player.m_localPlayer;
             if (player != null && player == m_playerAttached && player.TakeInput())
             {
-                forceOff = CircletExtended.disableOnSleep.Value && player.InBed();
+                forceOff = disableOnSleep.Value && player.InBed();
 
                 if (!forceOff && StateChanged(player))
                     SaveState();
@@ -135,7 +136,7 @@ namespace CircletExtended
                     LogInfo($"Toggle shadows {(m_state.spot ? "on" : "off")}");
                     return true;
                 }
-                else if (enableOverload.Value && IsShortcutDown(hotkey, overloadShortcut))
+                else if (enableOverload.Value && IsShortcutDown(hotkey, overloadShortcut) && (!getFeaturesByUpgrade.Value || quality >= 3))
                 {
                     LogInfo("Overload");
                     if (m_state.overload != 1f)
@@ -143,7 +144,7 @@ namespace CircletExtended
                     else
                         ApplyOverloadEffect(player);
                 }
-                else if (enableDemister.Value && IsShortcutDown(hotkey, toggleDemisterShortcut))
+                else if (enableDemister.Value && IsShortcutDown(hotkey, toggleDemisterShortcut) && (!getFeaturesByUpgrade.Value || quality >= 4))
                 {
                     m_state.demister = !m_state.demister;
                     LogInfo($"Toggle demister {(m_state.demister ? "on" : "off")}");
@@ -423,6 +424,10 @@ namespace CircletExtended
             m_frontLight.range *= intensityFactor;
             m_frontLight.intensity *= intensityFactor;
             m_frontLight.intensity *= m_state.overload;
+            
+            float qualityFactor = 1f + quality * 0.05f;
+            m_frontLight.range *= qualityFactor;
+            m_frontLight.intensity *= qualityFactor;
 
             m_frontLight.enabled = !forceOff && m_state.on;
             m_frontLight.shadows = enableShadows.Value && m_state.shadows && m_state.level != _maxLevel ? LightShadows.Soft : LightShadows.None;
@@ -484,7 +489,7 @@ namespace CircletExtended
             if (player == null)
                 return;
 
-            ItemDrop.ItemData item = player.m_helmetItem;
+            ItemDrop.ItemData item = player.GetCirclet().circlet == null ? player.m_helmetItem : player.GetCirclet().circlet;
             if (item == null)
                 return;
 
@@ -563,7 +568,55 @@ namespace CircletExtended
 
     }
 
+    [HarmonyPatch(typeof(ArmorStand), nameof(ArmorStand.SetVisualItem))]
+    public static class ArmorStand_SetVisualItem_Patch
+    {
+        private static void Prefix(ArmorStand __instance, int index, string itemName, int variant, List<ArmorStand.ArmorStandSlot> ___m_slots, ref bool __state)
+        {
+            if (!modEnabled.Value)
+                return;
+
+            ArmorStand.ArmorStandSlot armorStandSlot = ___m_slots[index];
+            if (armorStandSlot.m_visualName == itemName && armorStandSlot.m_visualVariant == variant)
+            {
+                return;
+            }
+
+            /*if (__instance.GetAttachedItem() != itemNameHelmetDverger)
+                return;
+
+            if (___m_visualItem != null)
+                return;
+
+            if (___m_visualName == itemName && ___m_visualVariant == variant)
+                return;
+
+            __state = true;*/
+        }
+
+        private static void Postfix(ArmorStand __instance)
+        {
+            if (!modEnabled.Value)
+                return;
+
+            /*if (!__state)
+                return;
+
+            DvergerLightController component = ___m_visualItem.GetComponentInChildren<DvergerLightController>();
+            if (component != null)
+                Object.Destroy(component);
+
+            Light[] lights = ___m_visualItem.GetComponentsInChildren<Light>();
+            if (lights.Length == 0)
+                return;
+
+            ___m_visualItem.AddComponent<DvergerLightController>().Initialize(lights[0], null, null);*/
+        }
+
+    }
     
-    
+
+
+
 
 }

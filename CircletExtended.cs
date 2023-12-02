@@ -62,6 +62,8 @@ namespace CircletExtended
 
         public static Dictionary<int, Piece.Requirement[]> recipeRequirements = new Dictionary<int, Piece.Requirement[]>();
 
+        public const ItemDrop.ItemData.ItemType itemTypeCirclet = (ItemDrop.ItemData.ItemType) 55;
+
         /// <summary>
         /// //////
         /// </summary>
@@ -185,21 +187,24 @@ namespace CircletExtended
 
         public static void PatchCircletItemData(ItemDrop.ItemData item)
         {
-            item.m_shared.m_maxQuality = 4;
+            if (!modEnabled.Value)
+                return;
 
-            item.m_shared.m_durabilityPerLevel = durabilityPerLevel.Value;
-        }
+            if (item == null)
+                return;
 
-        public static void LogReqs(string eventname, Piece.Requirement[] requirements, int qualityLevel)
-        {
-            foreach (Piece.Requirement requirement in requirements)
+            if (getFeaturesByUpgrade.Value)
             {
-                if ((bool)requirement.m_resItem)
-                {
-                    LogInfo($"{eventname} {qualityLevel} {requirement.m_resItem.m_itemData.m_shared.m_name} {requirement.GetAmount(qualityLevel)}");
-                }
+                item.m_shared.m_maxQuality = 4;
+                item.m_shared.m_durabilityPerLevel = durabilityPerLevel.Value;
             }
 
+            if (enablePutOnTop.Value)
+            {
+                if (getFeaturesByUpgrade.Value && item.m_quality >= 2 || !getFeaturesByUpgrade.Value)
+                    item.m_shared.m_itemType = itemTypeCirclet;
+            }
         }
+
     }
 }
