@@ -29,7 +29,6 @@ namespace CircletExtended
         public static ConfigEntry<bool> enableOverload;
         public static ConfigEntry<bool> enableDemister;
         public static ConfigEntry<bool> enablePutOnTop;
-        public static ConfigEntry<float> demisterRadius; 
 
         public static ConfigEntry<Color> circletColor;
 
@@ -123,9 +122,8 @@ namespace CircletExtended
                                                                                                                         "If set the order of upgrades are \"Default\" -> \"Put on top\" -> \"Overload\" -> \"Demister\"");
             durabilityPerLevel = config("Circlet - Features", "Durability per level", defaultValue: 500f, "Durability added per level");
             enableOverload = config("Circlet - Features", "Enable overload", defaultValue: true, "Enables overload. Press hotkey to blind opponents with a bright flash at the cost of some circlet durability");
-            enableDemister = config("Circlet - Features", "Enable demister", defaultValue: true, "Enables demister. Spawn a little wisp to push away the mists");
-            enablePutOnTop = config("Circlet - Features", "Enable put on top", defaultValue: true, "Enables put on top. Equip circlet without using a helmet slot.");
-            demisterRadius = config("Circlet - Features", "Demister radius", defaultValue: 6f, "Demister effect radius. Default wisp radius is 6.");
+            enableDemister = config("Circlet - Features", "Enable demister", defaultValue: true, "Enables demister. Press hotkey to spawn a little wisp to push away the mists");
+            enablePutOnTop = config("Circlet - Features", "Enable put on top", defaultValue: true, "Enables equipping circlet on top of other helmet. Equip circlet without using a helmet slot.");
 
             widenShortcut = config("Hotkeys", "Beam widen", defaultValue: new KeyboardShortcut(KeyCode.RightArrow), "Widen beam shortcut. [Not Synced with Server]", false);
             narrowShortcut = config("Hotkeys", "Beam narrow", defaultValue: new KeyboardShortcut(KeyCode.LeftArrow), "Narrow beam shortcut. [Not Synced with Server]", false);
@@ -197,6 +195,7 @@ namespace CircletExtended
             {
                 item.m_shared.m_maxQuality = 4;
                 item.m_shared.m_durabilityPerLevel = durabilityPerLevel.Value;
+                item.m_shared.m_useDurability = item.GetDurabilityPercentage() != 1f || item.m_quality >= 3;
             }
 
             if (enablePutOnTop.Value)

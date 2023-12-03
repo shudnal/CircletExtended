@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -7,7 +8,7 @@ using static CircletExtended.CircletExtended;
 namespace CircletExtended
 {
     [HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.Awake))]
-    public static class ObjectDB_Awake_CircletStat
+    public static class ObjectDB_Awake_CircletStats
     {
         [HarmonyPriority(Priority.Last)]
         private static void Postfix(ObjectDB __instance, ref List<Recipe> ___m_recipes)
@@ -86,10 +87,10 @@ namespace CircletExtended
         }
     }
 
-    [HarmonyPatch(typeof(ItemDrop), nameof(ItemDrop.Awake))]
-    public static class ItemDrop_Awake_CircletStats
+    [HarmonyPatch(typeof(Player), nameof(Player.AddKnownItem))]
+    public static class Player_AddKnownItem_CircletStats
     {
-        private static void Postfix(ref ItemDrop __instance)
+        private static void Postfix(ref ItemDrop.ItemData item)
         {
             if (!modEnabled.Value)
                 return;
@@ -97,28 +98,10 @@ namespace CircletExtended
             if (!getFeaturesByUpgrade.Value)
                 return;
 
-            if (__instance.GetPrefabName(__instance.name) != itemNameHelmetDverger)
+            if (item.m_shared.m_name != itemDropNameHelmetDverger)
                 return;
 
-            PatchCircletItemData(__instance.m_itemData);
-        }
-    }
-
-    [HarmonyPatch(typeof(ItemDrop), nameof(ItemDrop.SlowUpdate))]
-    public static class ItemDrop_SlowUpdate_CircletStats
-    {
-        private static void Postfix(ref ItemDrop __instance)
-        {
-            if (!modEnabled.Value)
-                return;
-
-            if (!getFeaturesByUpgrade.Value)
-                return;
-
-            if (__instance.GetPrefabName(__instance.name) != itemNameHelmetDverger)
-                return;
-
-            PatchCircletItemData(__instance.m_itemData);
+            PatchCircletItemData(item);
         }
     }
 
@@ -141,6 +124,24 @@ namespace CircletExtended
 
             foreach (ItemDrop.ItemData item in items)
                 PatchCircletItemData(item);
+        }
+    }
+
+    [HarmonyPatch(typeof(ItemDrop), nameof(ItemDrop.Start))]
+    public static class ItemDrop_Start_CircletStats
+    {
+        private static void Postfix(ref ItemDrop __instance)
+        {
+            if (!modEnabled.Value)
+                return;
+
+            if (!getFeaturesByUpgrade.Value)
+                return;
+
+            if (__instance.GetPrefabName(__instance.name) != itemNameHelmetDverger)
+                return;
+
+            PatchCircletItemData(__instance.m_itemData);
         }
     }
 

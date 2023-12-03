@@ -20,6 +20,7 @@ namespace CircletExtended
 
         private Player m_playerAttached;
         private ItemDrop.ItemData m_item;
+        private int m_zdoIndex;
 
         private int _maxLevel = 3;
         private float _minAngle = 30f;
@@ -73,7 +74,7 @@ namespace CircletExtended
 
             GetSpotLight();
 
-            var player = Player.m_localPlayer;
+            Player player = Player.m_localPlayer;
             if (player != null && player == m_playerAttached && player.TakeInput())
             {
                 forceOff = disableOnSleep.Value && player.InBed();
@@ -83,6 +84,17 @@ namespace CircletExtended
             }
 
             UpdateLights();
+        }
+
+        private void OnDestroy()
+        {
+            if (!modEnabled.Value)
+                return;
+
+            Player player = Player.m_localPlayer;
+            if (player != null && player == m_playerAttached && m_state.demister && player.GetSEMan().GetStatusEffect(demisterEffectHash) != null 
+                    && player.m_utilityItem != null && player.m_utilityItem.m_shared.m_name != "$item_demister")
+                player.GetSEMan().RemoveStatusEffect(demisterEffectHash);
         }
 
         private bool StateChanged(Player player)
@@ -105,26 +117,26 @@ namespace CircletExtended
                 if (!m_state.on)
                     continue;
 
-                if (IsShortcutDown(hotkey, widenShortcut) && m_state.level > 0)
+                if (m_state.level > 0 && IsShortcutDown(hotkey, widenShortcut))
                 {
                     m_state.level--;
                     LogInfo($"Widen {m_state.level}");
                     return true;
                 }
-                else if (IsShortcutDown(hotkey, narrowShortcut) && m_state.level < _maxLevel)
+                else if (m_state.level < _maxLevel && IsShortcutDown(hotkey, narrowShortcut))
                 {
                     m_state.level++;
                     
                     LogInfo($"Narrow {m_state.level}");
                     return true;
                 }
-                else if (IsShortcutDown(hotkey, increaseIntensityShortcut) && m_state.intensity < intensityFactorMax)
+                else if (m_state.intensity < intensityFactorMax && IsShortcutDown(hotkey, increaseIntensityShortcut))
                 {
                     m_state.intensity = Mathf.Clamp(m_state.intensity + intensityIncrement, intensityFactorMin, intensityFactorMax);
                     LogInfo($"Increase intensity {m_state.intensity}%");
                     return true;
                 }
-                else if (IsShortcutDown(hotkey, decreaseIntensityShortcut) && m_state.intensity > intensityFactorMin)
+                else if (m_state.intensity > intensityFactorMin && IsShortcutDown(hotkey, decreaseIntensityShortcut))
                 {
                     m_state.intensity = Mathf.Clamp(m_state.intensity - intensityIncrement, intensityFactorMin, intensityFactorMax);
                     LogInfo($"Decrease intensity {m_state.intensity}%");
@@ -136,7 +148,7 @@ namespace CircletExtended
                     LogInfo($"Toggle shadows {(m_state.spot ? "on" : "off")}");
                     return true;
                 }
-                else if (enableOverload.Value && IsShortcutDown(hotkey, overloadShortcut) && (!getFeaturesByUpgrade.Value || quality >= 3))
+                else if (enableOverload.Value && (!getFeaturesByUpgrade.Value || quality >= 3) && IsShortcutDown(hotkey, overloadShortcut))
                 {
                     LogInfo("Overload");
                     if (m_state.overload != 1f)
@@ -144,7 +156,7 @@ namespace CircletExtended
                     else
                         ApplyOverloadEffect(player);
                 }
-                else if (enableDemister.Value && IsShortcutDown(hotkey, toggleDemisterShortcut) && (!getFeaturesByUpgrade.Value || quality >= 4))
+                else if (enableDemister.Value && (!getFeaturesByUpgrade.Value || quality >= 4) && IsShortcutDown(hotkey, toggleDemisterShortcut))
                 {
                     m_state.demister = !m_state.demister;
                     LogInfo($"Toggle demister {(m_state.demister ? "on" : "off")}");
@@ -314,11 +326,12 @@ namespace CircletExtended
             }
         }
 
-        public void Initialize(Light light, Player player, ItemDrop.ItemData item)
+        public void Initialize(Light light, Player player, ItemDrop.ItemData item, int zdoIndex = 0)
         {
             m_frontLight = light;
             m_playerAttached = player;
             m_item = item;
+            m_zdoIndex = zdoIndex;
 
             LoadState();
 
@@ -339,20 +352,29 @@ namespace CircletExtended
             {
                 stateJSON = m_item.m_customData.GetValueSafe(customDataKey);
                 quality = m_item.m_quality;
-                LogInfo($"Loading state from m_customData: {stateJSON}");
+                LogInfo($"Loading state from item: {stateJSON}");
             }
 
             if (String.IsNullOrWhiteSpace(stateJSON) && m_nview != null && m_nview.IsValid())
             {
                 ZDO zdo = m_nview.GetZDO();
 
-                int @int = zdo.GetInt(ZDOVars.s_dataCount);
-                for (int i = 0; i < @int; i++)
-                    if (zdo.GetString($"data_{i}") == customDataKey)
-                        stateJSON = zdo.GetString($"data__{i}");
+                ItemDrop.ItemData item = new ItemDrop.ItemData();
+                ItemDrop.LoadFromZDO(item, zdo);
 
-                quality = zdo.GetInt(ZDOVars.s_quality, 1);
-                LogInfo($"Loading state from m_nview: {stateJSON}");
+                stateJSON = item.m_customData.GetValueSafe(customDataKey);
+                quality = item.m_quality;
+
+                LogInfo($"Loading state from zdo: {stateJSON}");
+
+                if (String.IsNullOrWhiteSpace(stateJSON))
+                {
+                    ItemDrop.LoadFromZDO(m_zdoIndex, item, zdo);
+                    stateJSON = item.m_customData.GetValueSafe(customDataKey);
+                    quality = item.m_quality;
+                    
+                    LogInfo($"Loading state from zdo index {m_zdoIndex}: {stateJSON}");
+                }
             }
 
             if (!String.IsNullOrWhiteSpace(stateJSON))
@@ -446,7 +468,6 @@ namespace CircletExtended
                 else if (!m_state.demister && seman.GetStatusEffect(demisterEffectHash) != null)
                     seman.RemoveStatusEffect(demisterEffectHash);
             }
-                
         }
         
         private void GetSpotLight()
@@ -474,7 +495,7 @@ namespace CircletExtended
             if (!modEnabled.Value)
                 return;
 
-            if (itemHash != itemHashHelmetDverger || !__instance.m_isPlayer || __result == null)
+            if (itemHash != itemHashHelmetDverger || __result == null)
                 return;
 
             DvergerLightController component = __result.GetComponent<DvergerLightController>();
@@ -485,22 +506,27 @@ namespace CircletExtended
             if (lights.Length == 0)
                 return;
 
-            Player player = __instance.GetComponentInParent<Player>();
-            if (player == null)
-                return;
+            ItemDrop.ItemData item = null;
+            Player player = null;
+            if (__instance.m_isPlayer)
+            {
+                player = __instance.GetComponentInParent<Player>();
+                if (player == null)
+                    return;
 
-            ItemDrop.ItemData item = player.GetCirclet().circlet == null ? player.m_helmetItem : player.GetCirclet().circlet;
-            if (item == null)
-                return;
+                item = player.GetCirclet().circlet ?? player.m_helmetItem;
+                if (item == null)
+                    return;
 
-            if (item.m_dropPrefab.name != itemNameHelmetDverger)
-                return;
+                if (item.m_dropPrefab.name != itemNameHelmetDverger)
+                    return;
+
+                PatchCircletItemData(item);
+            }
 
             instance.ConfigInit();
 
             __result.AddComponent<DvergerLightController>().Initialize(lights[0], player, item);
-
-            item.m_shared.m_useDurability = item.GetDurabilityPercentage() != 1f;
         }
     }
 
@@ -571,46 +597,52 @@ namespace CircletExtended
     [HarmonyPatch(typeof(ArmorStand), nameof(ArmorStand.SetVisualItem))]
     public static class ArmorStand_SetVisualItem_Patch
     {
-        private static void Prefix(ArmorStand __instance, int index, string itemName, int variant, List<ArmorStand.ArmorStandSlot> ___m_slots, ref bool __state)
+        private static void Prefix(int index, List<ArmorStand.ArmorStandSlot> ___m_slots, string itemName, int variant, ref bool __state)
         {
             if (!modEnabled.Value)
+                return;
+
+            if (itemName != itemNameHelmetDverger)
                 return;
 
             ArmorStand.ArmorStandSlot armorStandSlot = ___m_slots[index];
+
+            if (armorStandSlot.m_slot != VisSlot.Helmet)
+                return;
+
             if (armorStandSlot.m_visualName == itemName && armorStandSlot.m_visualVariant == variant)
-            {
-                return;
-            }
-
-            /*if (__instance.GetAttachedItem() != itemNameHelmetDverger)
                 return;
 
-            if (___m_visualItem != null)
-                return;
-
-            if (___m_visualName == itemName && ___m_visualVariant == variant)
-                return;
-
-            __state = true;*/
+            __state = true;
         }
 
-        private static void Postfix(ArmorStand __instance)
+        private static void Postfix(int index, VisEquipment ___m_visEquipment, List<ArmorStand.ArmorStandSlot> ___m_slots, bool __state)
         {
             if (!modEnabled.Value)
                 return;
 
-            /*if (!__state)
+            if (!__state)
                 return;
 
-            DvergerLightController component = ___m_visualItem.GetComponentInChildren<DvergerLightController>();
+            ___m_visEquipment.UpdateVisuals();
+
+            ArmorStand.ArmorStandSlot armorStandSlot = ___m_slots[index];
+            if (armorStandSlot.m_visualName != itemNameHelmetDverger)
+                return;
+
+            GameObject visualItem = ___m_visEquipment.m_helmetItemInstance;
+            if (visualItem == null)
+                return;
+
+            DvergerLightController component = visualItem.GetComponentInChildren<DvergerLightController>();
             if (component != null)
                 Object.Destroy(component);
 
-            Light[] lights = ___m_visualItem.GetComponentsInChildren<Light>();
+            Light[] lights = visualItem.GetComponentsInChildren<Light>();
             if (lights.Length == 0)
                 return;
 
-            ___m_visualItem.AddComponent<DvergerLightController>().Initialize(lights[0], null, null);*/
+            visualItem.AddComponent<DvergerLightController>().Initialize(lights[0], null, null, index);
         }
 
     }
