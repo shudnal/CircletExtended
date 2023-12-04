@@ -22,22 +22,20 @@ namespace CircletExtended
         private ItemDrop.ItemData m_item;
         private int m_zdoIndex;
 
-        private int _maxLevel = 3;
-        private float _minAngle = 30f;
-        private float _maxAngle = 110f;
-        private float _minIntensity = 1.4f;
-        private float _maxIntensity = 2.2f;
-        private float _minRange = 45f;
-        private float _maxRange = 15f;
-        private float _pointIntensity = 1.1f;
-        private float _pointRange = 10f;
-        private int _overloadCharges = 20;
+        private LightState m_state = new LightState();
+        private bool m_forceOff = false;
+        private int m_quality = 1;
 
-        private bool forceOff = false;
-
-        public int quality = 1;
-
-        public LightState m_state = new LightState();
+        private int m_maxLevel = 3;
+        private float m_minAngle = 30f;
+        private float m_maxAngle = 110f;
+        private float m_minIntensity = 1.4f;
+        private float m_maxIntensity = 2.2f;
+        private float m_minRange = 45f;
+        private float m_maxRange = 15f;
+        private float m_pointIntensity = 1.1f;
+        private float m_pointRange = 10f;
+        private int m_overloadCharges = 50;
 
         const int intensityIncrement = 10;
         const int intensityFactorMax = 150;
@@ -50,7 +48,7 @@ namespace CircletExtended
         private static int s_rayMaskSolids = 0;
         private static int s_rayMaskCharacters = 0;
 
-        public class LightState
+        private class LightState
         {
             public bool on = true;
             public int level = 2;
@@ -67,19 +65,22 @@ namespace CircletExtended
             m_nview = GetComponentInParent<ZNetView>();
         }
 
+        private void Start()
+        {
+            GetSpotLight();
+        }
+
         private void Update()
         {
             if (!modEnabled.Value)
                 return;
 
-            GetSpotLight();
-
             Player player = Player.m_localPlayer;
             if (player != null && player == m_playerAttached && player.TakeInput())
             {
-                forceOff = disableOnSleep.Value && player.InBed();
+                m_forceOff = disableOnSleep.Value && player.InBed();
 
-                if (!forceOff && StateChanged(player))
+                if (!m_forceOff && StateChanged(player))
                     SaveState();
             }
 
@@ -93,7 +94,7 @@ namespace CircletExtended
 
             Player player = Player.m_localPlayer;
             if (player != null && player == m_playerAttached && m_state.demister && player.GetSEMan().GetStatusEffect(demisterEffectHash) != null 
-                    && player.m_utilityItem != null && player.m_utilityItem.m_shared.m_name != "$item_demister")
+                    && (player.m_utilityItem == null || player.m_utilityItem.m_shared.m_name != "$item_demister"))
                 player.GetSEMan().RemoveStatusEffect(demisterEffectHash);
         }
 
@@ -123,7 +124,7 @@ namespace CircletExtended
                     LogInfo($"Widen {m_state.level}");
                     return true;
                 }
-                else if (m_state.level < _maxLevel && IsShortcutDown(hotkey, narrowShortcut))
+                else if (m_state.level < m_maxLevel && IsShortcutDown(hotkey, narrowShortcut))
                 {
                     m_state.level++;
                     
@@ -148,7 +149,7 @@ namespace CircletExtended
                     LogInfo($"Toggle shadows {(m_state.spot ? "on" : "off")}");
                     return true;
                 }
-                else if (enableOverload.Value && (!getFeaturesByUpgrade.Value || quality >= 3) && IsShortcutDown(hotkey, overloadShortcut))
+                else if (enableOverload.Value && (!getFeaturesByUpgrade.Value || m_quality >= 3) && IsShortcutDown(hotkey, overloadShortcut))
                 {
                     LogInfo("Overload");
                     if (m_state.overload != 1f)
@@ -156,7 +157,7 @@ namespace CircletExtended
                     else
                         ApplyOverloadEffect(player);
                 }
-                else if (enableDemister.Value && (!getFeaturesByUpgrade.Value || quality >= 4) && IsShortcutDown(hotkey, toggleDemisterShortcut))
+                else if (enableDemister.Value && (!getFeaturesByUpgrade.Value || m_quality >= 4) && IsShortcutDown(hotkey, toggleDemisterShortcut))
                 {
                     m_state.demister = !m_state.demister;
                     LogInfo($"Toggle demister {(m_state.demister ? "on" : "off")}");
@@ -254,7 +255,7 @@ namespace CircletExtended
             }
 
             m_item.m_shared.m_useDurability = true;
-            float cost = m_item.GetMaxDurability() / _overloadCharges;
+            float cost = m_item.GetMaxDurability() / m_overloadCharges;
             m_item.m_durability = Mathf.Max(0f, m_item.m_durability - cost);
         }
 
@@ -319,7 +320,7 @@ namespace CircletExtended
             {
                 MessageHud.instance.m_msgQeue.Clear();
                 MessageHud.instance.m_msgQueueTimer = 1f;
-                if (!forceOff && m_state.on)
+                if (!m_forceOff && m_state.on)
                     MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft, $"$item_helmet_dverger: $msg_level {m_state.level} ({m_state.intensity}%)");
                 else
                     MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft, "$item_helmet_dverger: $hud_off");
@@ -340,18 +341,18 @@ namespace CircletExtended
 
         private void LoadState()
         {
-            if (StateLoaded())
+            if (IsStateLoaded())
                 SetQuality();
         }
 
-        private bool StateLoaded()
+        private bool IsStateLoaded()
         {
             string stateJSON = "";
 
             if (m_item != null)
             {
                 stateJSON = m_item.m_customData.GetValueSafe(customDataKey);
-                quality = m_item.m_quality;
+                m_quality = m_item.m_quality;
                 LogInfo($"Loading state from item: {stateJSON}");
             }
 
@@ -363,7 +364,7 @@ namespace CircletExtended
                 ItemDrop.LoadFromZDO(item, zdo);
 
                 stateJSON = item.m_customData.GetValueSafe(customDataKey);
-                quality = item.m_quality;
+                m_quality = item.m_quality;
 
                 LogInfo($"Loading state from zdo: {stateJSON}");
 
@@ -371,7 +372,7 @@ namespace CircletExtended
                 {
                     ItemDrop.LoadFromZDO(m_zdoIndex, item, zdo);
                     stateJSON = item.m_customData.GetValueSafe(customDataKey);
-                    quality = item.m_quality;
+                    m_quality = item.m_quality;
                     
                     LogInfo($"Loading state from zdo index {m_zdoIndex}: {stateJSON}");
                 }
@@ -382,15 +383,17 @@ namespace CircletExtended
                 try
                 {
                     m_state = JsonUtility.FromJson<LightState>(stateJSON);
-                    return true;
                 }
                 catch (Exception e)
                 {
                     LogInfo($"State parsing error:\n{e}");
+                    return false;
                 }
             }
 
-            return false;
+            m_state.overload = 1f;
+
+            return true;
         }
 
         private void SaveState()
@@ -410,36 +413,38 @@ namespace CircletExtended
 
         private void SetQuality()
         {
-            _maxLevel = Mathf.Clamp(MaxSteps.Value, 1, 50);
-            _minAngle = Mathf.Clamp(MinAngle.Value, 1, 360);
-            _maxAngle = Mathf.Clamp(MaxAngle.Value, 1, 360);
-            _minIntensity = Mathf.Clamp(MaxIntensity.Value, 0, 10);
-            _maxIntensity = Mathf.Clamp(MinIntensity.Value, 0, 10);
-            _minRange = Mathf.Clamp(MinRange.Value, 0, 1000);
-            _maxRange = Mathf.Clamp(MaxRange.Value, 0, 1000);
-            _pointIntensity = Mathf.Clamp(PointIntensity.Value, 0, 10);
-            _pointRange = Mathf.Clamp(PointRange.Value, 0, 1000);
+            m_maxLevel = Mathf.Clamp(GetMaxSteps(m_quality), 1, 50);
+            m_minAngle = Mathf.Clamp(GetMinAngle(m_quality), 1, 360);
+            m_maxAngle = Mathf.Clamp(GetMaxAngle(m_quality), 1, 360);
+            m_minIntensity = Mathf.Clamp(GetMaxIntensity(m_quality), 0, 10);
+            m_maxIntensity = Mathf.Clamp(GetMinIntensity(m_quality), 0, 10);
+            m_minRange = Mathf.Clamp(GetMinRange(m_quality), 0, 1000);
+            m_maxRange = Mathf.Clamp(GetMaxRange(m_quality), 0, 1000);
+            m_pointIntensity = Mathf.Clamp(GetPointIntensity(m_quality), 0, 10);
+            m_pointRange = Mathf.Clamp(GetPointRange(m_quality), 0, 1000);
 
-            _overloadCharges = getFeaturesByUpgrade.Value ? 25 * quality : 100;
+            m_overloadCharges = overloadChargesPerLevel.Value * (getFeaturesByUpgrade.Value && m_quality <= 3 ? 1 : 2);
         }
 
         private void UpdateLights()
         {
-            if (m_state.level == _maxLevel)
+            if (m_state.level == m_maxLevel)
             {
                 m_frontLight.type = LightType.Point;
-                m_frontLight.intensity = _pointIntensity;
-                m_frontLight.range = _pointRange;
+                m_frontLight.intensity = m_pointIntensity;
+                m_frontLight.range = m_pointRange;
             }
             else
             {
-                float t = (float) m_state.level / Math.Max(_maxLevel - 1, 1);
+                float t = (float) m_state.level / Math.Max(m_maxLevel - 1, 1);
 
                 m_frontLight.type = LightType.Spot;
-                m_frontLight.spotAngle = Mathf.Lerp(_minAngle, _maxAngle, t);
-                m_frontLight.intensity = Mathf.Lerp(_minIntensity, _maxIntensity, t);
-                m_frontLight.range = Mathf.Lerp(_minRange, _maxRange, t);
+                m_frontLight.spotAngle = Mathf.Lerp(m_minAngle, m_maxAngle, t);
+                m_frontLight.intensity = Mathf.Lerp(m_minIntensity, m_maxIntensity, t);
+                m_frontLight.range = Mathf.Lerp(m_minRange, m_maxRange, t);
             }
+
+            m_frontLight.color = m_state.color;
 
             float intensityFactor = m_state.intensity / 100f;
 
@@ -447,16 +452,16 @@ namespace CircletExtended
             m_frontLight.intensity *= intensityFactor;
             m_frontLight.intensity *= m_state.overload;
             
-            float qualityFactor = 1f + quality * 0.05f;
+            float qualityFactor = 1f + m_quality * 0.05f;
             m_frontLight.range *= qualityFactor;
             m_frontLight.intensity *= qualityFactor;
 
-            m_frontLight.enabled = !forceOff && m_state.on;
-            m_frontLight.shadows = enableShadows.Value && m_state.shadows && m_state.level != _maxLevel ? LightShadows.Soft : LightShadows.None;
+            m_frontLight.enabled = !m_forceOff && m_state.on;
+            m_frontLight.shadows = enableShadows.Value && m_state.shadows && m_state.level != m_maxLevel ? LightShadows.Soft : LightShadows.None;
 
             if (m_spotLight != null)
             {
-                m_spotLight.enabled = !forceOff && m_state.spot;
+                m_spotLight.enabled = !m_forceOff && m_state.spot;
                 m_spotLight.intensity = m_state.overload;
             }
 
@@ -472,9 +477,6 @@ namespace CircletExtended
         
         private void GetSpotLight()
         {
-            if (!m_playerAttached)
-                return;
-
             if (m_spotLight != null)
                 return;
 
@@ -488,7 +490,7 @@ namespace CircletExtended
     }
 
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.AttachItem))]
-    public static class VisEquipment_AttachItem_Patch
+    public static class VisEquipment_AttachItem_HumanoidAttachment
     {
         private static void Postfix(VisEquipment __instance, GameObject __result, int itemHash)
         {
@@ -526,12 +528,14 @@ namespace CircletExtended
 
             instance.ConfigInit();
 
+            __instance.UpdateVisuals();
+
             __result.AddComponent<DvergerLightController>().Initialize(lights[0], player, item);
         }
     }
 
     [HarmonyPatch(typeof(ItemDrop), nameof(ItemDrop.Start))]
-    public static class ItemDrop_Start_Patch
+    public static class ItemDrop_Start_ItemDropAttachment
     {
         private static void Postfix(ItemDrop __instance)
         {
@@ -554,7 +558,7 @@ namespace CircletExtended
     }
 
     [HarmonyPatch(typeof(ItemStand), nameof(ItemStand.SetVisualItem))]
-    public static class ItemStand_SetVisualItem_Patch
+    public static class ItemStand_SetVisualItem_ItemStandAttachment
     {
         private static void Prefix(ItemStand __instance, GameObject ___m_visualItem, string ___m_visualName, int ___m_visualVariant, string itemName, int variant, ref bool __state)
         {
@@ -595,7 +599,7 @@ namespace CircletExtended
     }
 
     [HarmonyPatch(typeof(ArmorStand), nameof(ArmorStand.SetVisualItem))]
-    public static class ArmorStand_SetVisualItem_Patch
+    public static class ArmorStand_SetVisualItem_ArmorStandAttachment
     {
         private static void Prefix(int index, List<ArmorStand.ArmorStandSlot> ___m_slots, string itemName, int variant, ref bool __state)
         {

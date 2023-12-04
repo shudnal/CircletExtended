@@ -1,5 +1,4 @@
 ﻿using HarmonyLib;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -183,7 +182,7 @@ namespace CircletExtended
 
         [HarmonyPriority(Priority.First)]
         public static void Prefix(Player player, ref Recipe ___m_craftRecipe, ref KeyValuePair<bool, Piece.Requirement[]> __state, ItemDrop.ItemData ___m_craftUpgradeItem)
-        {
+        {   
             if (!PatchMethod(___m_craftUpgradeItem, ___m_craftRecipe))
                 return;
 

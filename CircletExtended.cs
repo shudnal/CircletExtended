@@ -10,6 +10,8 @@ using ServerSync;
 namespace CircletExtended
 {
     [BepInPlugin(pluginID, pluginName, pluginVersion)]
+    [BepInIncompatibility("randyknapp.mods.dvergercolor")]
+    [BepInIncompatibility("Azumatt.CircletDemister")]
     public class CircletExtended : BaseUnityPlugin
     {
         const string pluginID = "shudnal.CircletExtended";
@@ -25,7 +27,8 @@ namespace CircletExtended
         private static ConfigEntry<bool> loggingEnabled;
 
         public static ConfigEntry<bool> getFeaturesByUpgrade;
-        private static ConfigEntry<float> durabilityPerLevel;
+        public static ConfigEntry<float> durabilityPerLevel;
+        public static ConfigEntry<int> overloadChargesPerLevel;
         public static ConfigEntry<bool> enableOverload;
         public static ConfigEntry<bool> enableDemister;
         public static ConfigEntry<bool> enablePutOnTop;
@@ -63,19 +66,45 @@ namespace CircletExtended
 
         public const ItemDrop.ItemData.ItemType itemTypeCirclet = (ItemDrop.ItemData.ItemType) 55;
 
-        /// <summary>
-        /// //////
-        /// </summary>
-        ///        
-        public static ConfigEntry<int> MaxSteps;
-        public static ConfigEntry<float> MinAngle;
-        public static ConfigEntry<float> MaxAngle;
-        public static ConfigEntry<float> MinIntensity;
-        public static ConfigEntry<float> MaxIntensity;
-        public static ConfigEntry<float> MinRange;
-        public static ConfigEntry<float> MaxRange;
-        public static ConfigEntry<float> PointIntensity;
-        public static ConfigEntry<float> PointRange;
+        public static ConfigEntry<int> maxSteps;
+        public static ConfigEntry<float> minAngle;
+        public static ConfigEntry<float> maxAngle;
+        public static ConfigEntry<float> minIntensity;
+        public static ConfigEntry<float> maxIntensity;
+        public static ConfigEntry<float> minRange;
+        public static ConfigEntry<float> maxRange;
+        public static ConfigEntry<float> pointIntensity;
+        public static ConfigEntry<float> pointRange;
+
+        public static ConfigEntry<int> maxSteps2;
+        public static ConfigEntry<float> minAngle2;
+        public static ConfigEntry<float> maxAngle2;
+        public static ConfigEntry<float> minIntensity2;
+        public static ConfigEntry<float> maxIntensity2;
+        public static ConfigEntry<float> minRange2;
+        public static ConfigEntry<float> maxRange2;
+        public static ConfigEntry<float> pointIntensity2;
+        public static ConfigEntry<float> pointRange2;
+
+        public static ConfigEntry<int> maxSteps3;
+        public static ConfigEntry<float> minAngle3;
+        public static ConfigEntry<float> maxAngle3;
+        public static ConfigEntry<float> minIntensity3;
+        public static ConfigEntry<float> maxIntensity3;
+        public static ConfigEntry<float> minRange3;
+        public static ConfigEntry<float> maxRange3;
+        public static ConfigEntry<float> pointIntensity3;
+        public static ConfigEntry<float> pointRange3;
+
+        public static ConfigEntry<int> maxSteps4;
+        public static ConfigEntry<float> minAngle4;
+        public static ConfigEntry<float> maxAngle4;
+        public static ConfigEntry<float> minIntensity4;
+        public static ConfigEntry<float> maxIntensity4;
+        public static ConfigEntry<float> minRange4;
+        public static ConfigEntry<float> maxRange4;
+        public static ConfigEntry<float> pointIntensity4;
+        public static ConfigEntry<float> pointRange4;
 
         public static string customDataKey;
 
@@ -108,7 +137,7 @@ namespace CircletExtended
 
         public void ConfigInit()
         {
-            config("General", "NexusID", 0, "Nexus mod ID for updates", false);
+            config("General", "NexusID", 2617, "Nexus mod ID for updates", false);
 
             modEnabled = config("General", "Enabled", defaultValue: true, "Enable the mod.");
             configLocked = config("General", "Lock Configuration", defaultValue: true, "Configuration is locked and can be changed by server admins only.");
@@ -116,25 +145,66 @@ namespace CircletExtended
 
             circletColor = config("Circlet", "Light color", defaultValue: Color.white, "Circlet beam light color. Changing this ingame will change current circlet color [Not Synced with Server]", false);
             disableOnSleep = config("Circlet", "Disable when sleeping", defaultValue: true, "Turn off the light when sleeping. [Not Synced with Server]", false);
-            enableShadows = config("Circlet", "Enables shadows toggle", defaultValue: true, "Enables option to toggle shadows. May impact the performance. [Not Synced with Server]", false);
+            enableShadows = config("Circlet", "Enables shadows toggle", defaultValue: true, "Enables option to toggle circlet's light to emit shadows. Disable if it impacts your performance. [Not Synced with Server]", false);
 
-            getFeaturesByUpgrade = config("Circlet - Features", "Get features by circlet upgrade", defaultValue: true, "Get circlet features by upgrading it. If not set all features are available by default.\n" +
-                                                                                                                        "If set the order of upgrades are \"Default\" -> \"Put on top\" -> \"Overload\" -> \"Demister\"");
+            getFeaturesByUpgrade = config("Circlet - Features", "Get features by circlet upgrade", defaultValue: true, "Get circlet features by upgrading it. If False all features are available by default.\n" +
+                                                                                                                        "If True the order of upgrades are \"Default\" -> \"Put on top\" -> \"Overload\" -> \"Demister\"");
             durabilityPerLevel = config("Circlet - Features", "Durability per level", defaultValue: 500f, "Durability added per level");
+            overloadChargesPerLevel = config("Circlet - Features", "Overload charges", 50, "How many overload charges is available. It is the fraction of durability being damaged on Overload use. x2 if upgrades are disabled or quality is maximum.");
             enableOverload = config("Circlet - Features", "Enable overload", defaultValue: true, "Enables overload. Press hotkey to blind opponents with a bright flash at the cost of some circlet durability");
             enableDemister = config("Circlet - Features", "Enable demister", defaultValue: true, "Enables demister. Press hotkey to spawn a little wisp to push away the mists");
             enablePutOnTop = config("Circlet - Features", "Enable put on top", defaultValue: true, "Enables equipping circlet on top of other helmet. Equip circlet without using a helmet slot.");
 
             widenShortcut = config("Hotkeys", "Beam widen", defaultValue: new KeyboardShortcut(KeyCode.RightArrow), "Widen beam shortcut. [Not Synced with Server]", false);
             narrowShortcut = config("Hotkeys", "Beam narrow", defaultValue: new KeyboardShortcut(KeyCode.LeftArrow), "Narrow beam shortcut. [Not Synced with Server]", false);
-            overloadShortcut = config("Hotkeys", "Overload", defaultValue: new KeyboardShortcut(KeyCode.T), "Overload shortcut. [Not Synced with Server]", false);
-            toggleShortcut = config("Hotkeys", "Toggle light", defaultValue: new KeyboardShortcut(KeyCode.UpArrow), "Toggle main light shortcut. [Not Synced with Server]", false);
-            toggleDemisterShortcut = config("Hotkeys", "Toggle demister", defaultValue: new KeyboardShortcut(KeyCode.DownArrow), "Toggle demister shortcut. [Not Synced with Server]", false);
+            overloadShortcut = config("Hotkeys", "Overload", defaultValue: new KeyboardShortcut(KeyCode.T), "Overload shortcut. Blind opponents with a bright flash at the cost of some circlet durability. [Not Synced with Server]", false);
+            toggleShortcut = config("Hotkeys", "Toggle light", defaultValue: new KeyboardShortcut(KeyCode.UpArrow), "Toggle main light shortcut. Enable/disable frontlight. [Not Synced with Server]", false);
+            toggleDemisterShortcut = config("Hotkeys", "Toggle demister", defaultValue: new KeyboardShortcut(KeyCode.DownArrow), "Toggle demister shortcut. Spawn/despawn demister wisplight. [Not Synced with Server]", false);
 
-            increaseIntensityShortcut = config("Hotkeys - Extra", "Intensity increase", defaultValue: new KeyboardShortcut(KeyCode.UpArrow, new KeyCode[1] { KeyCode.LeftShift }), "Increase intensity shortcut. [Not Synced with Server]", false);
-            decreaseIntensityShortcut = config("Hotkeys - Extra", "Intensity decrease", defaultValue: new KeyboardShortcut(KeyCode.DownArrow, new KeyCode[1] { KeyCode.LeftShift }), "Decrease intensity shortcut. [Not Synced with Server]", false);
-            toggleShadowsShortcut = config("Hotkeys - Extra", "Toggle shadows", defaultValue: new KeyboardShortcut(KeyCode.LeftArrow, new KeyCode[1] { KeyCode.LeftShift }), "Toggle shadows shortcut. [Not Synced with Server]", false);
-            toggleSpotShortcut = config("Hotkeys - Extra", "Toggle radiance", defaultValue: new KeyboardShortcut(KeyCode.RightArrow, new KeyCode[1] { KeyCode.LeftShift }), "Toggle spotlight shortcut. [Not Synced with Server]", false);
+            increaseIntensityShortcut = config("Hotkeys - Extra", "Intensity increase", defaultValue: new KeyboardShortcut(KeyCode.UpArrow, new KeyCode[1] { KeyCode.LeftShift }), "Increase intensity shortcut. Light becomes brighter and have more range. Intensity is capped at 150% [Not Synced with Server]", false);
+            decreaseIntensityShortcut = config("Hotkeys - Extra", "Intensity decrease", defaultValue: new KeyboardShortcut(KeyCode.DownArrow, new KeyCode[1] { KeyCode.LeftShift }), "Decrease intensity shortcut. Light becomes darker and have less range. Intensity is capped at 50% [Not Synced with Server]", false);
+            toggleShadowsShortcut = config("Hotkeys - Extra", "Toggle shadows", defaultValue: new KeyboardShortcut(KeyCode.LeftArrow, new KeyCode[1] { KeyCode.LeftShift }), "Toggle shadows shortcut. Enables/disables the current light source to emit soft shadows. [Not Synced with Server]", false);
+            toggleSpotShortcut = config("Hotkeys - Extra", "Toggle radiance", defaultValue: new KeyboardShortcut(KeyCode.RightArrow, new KeyCode[1] { KeyCode.LeftShift }), "Toggle spotlight shortcut. Enables/disables the radiance when circlet is equipped. [Not Synced with Server]", false);
+
+            maxSteps = config("Light - Default", "Max Steps", 3, "Define how many steps of focus the Dverger light beam has. Must be at least 2.");
+            minAngle = config("Light - Default", "Min Angle", 30.0f, "The angle of the beam at the narrowest setting.");
+            maxAngle = config("Light - Default", "Max Angle", 110.0f, "The angle of the beam at the widest setting.");
+            minIntensity = config("Light - Default", "Min Intensity", 1.4f, "The intensity of the beam at the widest setting.");
+            maxIntensity = config("Light - Default", "Max Intensity", 2.2f, "The intensity of the beam at the narrowest setting");
+            minRange = config("Light - Default", "Min Range", 45.0f, "The range of the beam at the narrowest setting.");
+            maxRange = config("Light - Default", "Max Range", 15.0f, "The range of the beam at the widest setting");
+            pointIntensity = config("Light - Default", "Point Intensity", 1.1f, "The intensity of the Dverger light pool on the point light setting.");
+            pointRange = config("Light - Default", "Point Range", 10.0f, "The range of the Dverger light pool on the point light setting.");
+
+            maxSteps2 = config("Light - Quality 2", "Max Steps", 3, "Define how many steps of focus the Dverger light beam has. Must be at least 2.");
+            minAngle2 = config("Light - Quality 2", "Min Angle", 30.0f, "The angle of the beam at the narrowest setting.");
+            maxAngle2 = config("Light - Quality 2", "Max Angle", 110.0f, "The angle of the beam at the widest setting.");
+            minIntensity2 = config("Light - Quality 2", "Min Intensity", 1.4f, "The intensity of the beam at the widest setting.");
+            maxIntensity2 = config("Light - Quality 2", "Max Intensity", 2.2f, "The intensity of the beam at the narrowest setting");
+            minRange2 = config("Light - Quality 2", "Min Range", 45.0f, "The range of the beam at the narrowest setting.");
+            maxRange2 = config("Light - Quality 2", "Max Range", 15.0f, "The range of the beam at the widest setting");
+            pointIntensity2 = config("Light - Quality 2", "Point Intensity", 1.1f, "The intensity of the Dverger light pool on the point light setting.");
+            pointRange2 = config("Light - Quality 2", "Point Range", 10.0f, "The range of the Dverger light pool on the point light setting.");
+
+            maxSteps3 = config("Light - Quality 3", "Max Steps", 3, "Define how many steps of focus the Dverger light beam has. Must be at least 2.");
+            minAngle3 = config("Light - Quality 3", "Min Angle", 30.0f, "The angle of the beam at the narrowest setting.");
+            maxAngle3 = config("Light - Quality 3", "Max Angle", 110.0f, "The angle of the beam at the widest setting.");
+            minIntensity3 = config("Light - Quality 3", "Min Intensity", 1.4f, "The intensity of the beam at the widest setting.");
+            maxIntensity3 = config("Light - Quality 3", "Max Intensity", 2.2f, "The intensity of the beam at the narrowest setting");
+            minRange3 = config("Light - Quality 3", "Min Range", 45.0f, "The range of the beam at the narrowest setting.");
+            maxRange3 = config("Light - Quality 3", "Max Range", 15.0f, "The range of the beam at the widest setting");
+            pointIntensity3 = config("Light - Quality 3", "Point Intensity", 1.1f, "The intensity of the Dverger light pool on the point light setting.");
+            pointRange3 = config("Light - Quality 3", "Point Range", 10.0f, "The range of the Dverger light pool on the point light setting.");
+
+            maxSteps4 = config("Light - Quality 4", "Max Steps", 3, "Define how many steps of focus the Dverger light beam has. Must be at least 2.");
+            minAngle4 = config("Light - Quality 4", "Min Angle", 30.0f, "The angle of the beam at the narrowest setting.");
+            maxAngle4 = config("Light - Quality 4", "Max Angle", 110.0f, "The angle of the beam at the widest setting.");
+            minIntensity4 = config("Light - Quality 4", "Min Intensity", 1.4f, "The intensity of the beam at the widest setting.");
+            maxIntensity4 = config("Light - Quality 4", "Max Intensity", 2.2f, "The intensity of the beam at the narrowest setting");
+            minRange4 = config("Light - Quality 4", "Min Range", 45.0f, "The range of the beam at the narrowest setting.");
+            maxRange4 = config("Light - Quality 4", "Max Range", 15.0f, "The range of the beam at the widest setting");
+            pointIntensity4 = config("Light - Quality 4", "Point Intensity", 1.1f, "The intensity of the Dverger light pool on the point light setting.");
+            pointRange4 = config("Light - Quality 4", "Point Range", 10.0f, "The range of the Dverger light pool on the point light setting.");
 
             itemHashHelmetDverger = itemNameHelmetDverger.GetStableHashCode();
             demisterEffectHash = "Demister".GetStableHashCode();
@@ -152,18 +222,6 @@ namespace CircletExtended
             AddShortcut(shortcutsModifiers, toggleDemisterShortcut);
 
             hotkeys = shortcutsModifiers.OrderByDescending(x => x.Value).Select(x => x.Key).ToList();
-
-            //////////
-            ///            
-            MaxSteps = config("General", "Max Steps", 3, "Define how many steps of focus the Dverger light beam has. Must be at least 2.");
-            MinAngle = config("General", "Min Angle", 30.0f, "The angle of the beam at the narrowest setting.");
-            MaxAngle = config("General", "Max Angle", 110.0f, "The angle of the beam at the widest setting.");
-            MinIntensity = config("General", "Min Intensity", 1.4f, "The intensity of the beam at the widest setting.");
-            MaxIntensity = config("General", "Max Intensity", 2.2f, "The intensity of the beam at the narrowest setting");
-            MinRange = config("General", "Min Range", 45.0f, "The range of the beam at the narrowest setting.");
-            MaxRange = config("General", "Max Range", 15.0f, "The range of the beam at the widest setting");
-            PointIntensity = config("General", "Point Intensity", 1.1f, "The intensity of the Dverger light pool on the point light setting.");
-            PointRange = config("General", "Point Range", 10.0f, "The range of the Dverger light pool on the point light setting.");
         }
 
         private void AddShortcut(Dictionary<int, int> shortcuts, ConfigEntry<KeyboardShortcut> shortcut)
@@ -203,6 +261,177 @@ namespace CircletExtended
                 if (getFeaturesByUpgrade.Value && item.m_quality >= 2 || !getFeaturesByUpgrade.Value)
                     item.m_shared.m_itemType = itemTypeCirclet;
             }
+        }
+    
+        public static int GetMaxSteps(int quality)
+        {
+            int targetQuality = getFeaturesByUpgrade.Value ? Mathf.Clamp(quality, 1, 4) : 1;
+
+            switch (targetQuality)
+            {
+                case 1:
+                    return maxSteps.Value;
+                case 2:
+                    return maxSteps2.Value;
+                case 3:
+                    return maxSteps3.Value;
+                case 4:
+                    return maxSteps4.Value;
+            };
+
+            return maxSteps.Value;
+        }
+
+        public static float GetMinAngle(int quality)
+        {
+            int targetQuality = getFeaturesByUpgrade.Value ? Mathf.Clamp(quality, 1, 4) : 1;
+
+            switch (targetQuality)
+            {
+                case 1:
+                    return minAngle.Value;
+                case 2:
+                    return minAngle2.Value;
+                case 3:
+                    return minAngle3.Value;
+                case 4:
+                    return minAngle4.Value;
+            };
+
+            return minAngle.Value;
+        }
+
+        public static float GetMaxAngle(int quality)
+        {
+            int targetQuality = getFeaturesByUpgrade.Value ? Mathf.Clamp(quality, 1, 4) : 1;
+
+            switch (targetQuality)
+            {
+                case 1:
+                    return maxAngle.Value;
+                case 2:
+                    return maxAngle2.Value;
+                case 3:
+                    return maxAngle3.Value;
+                case 4:
+                    return maxAngle4.Value;
+            };
+
+            return maxAngle.Value;
+        }
+
+        public static float GetMinIntensity(int quality)
+        {
+            int targetQuality = getFeaturesByUpgrade.Value ? Mathf.Clamp(quality, 1, 4) : 1;
+
+            switch (targetQuality)
+            {
+                case 1:
+                    return minIntensity.Value;
+                case 2:
+                    return minIntensity2.Value;
+                case 3:
+                    return minIntensity3.Value;
+                case 4:
+                    return minIntensity4.Value;
+            };
+
+            return minIntensity.Value;
+        }
+
+        public static float GetMaxIntensity(int quality)
+        {
+            int targetQuality = getFeaturesByUpgrade.Value ? Mathf.Clamp(quality, 1, 4) : 1;
+
+            switch (targetQuality)
+            {
+                case 1:
+                    return maxIntensity.Value;
+                case 2:
+                    return maxIntensity2.Value;
+                case 3:
+                    return maxIntensity3.Value;
+                case 4:
+                    return maxIntensity4.Value;
+            };
+
+            return maxIntensity.Value;
+        }
+
+        public static float GetMinRange(int quality)
+        {
+            int targetQuality = getFeaturesByUpgrade.Value ? Mathf.Clamp(quality, 1, 4) : 1;
+
+            switch (targetQuality)
+            {
+                case 1:
+                    return minRange.Value;
+                case 2:
+                    return minRange2.Value;
+                case 3:
+                    return minRange3.Value;
+                case 4:
+                    return minRange4.Value;
+            };
+
+            return minRange.Value;
+        }
+
+        public static float GetMaxRange(int quality)
+        {
+            int targetQuality = getFeaturesByUpgrade.Value ? Mathf.Clamp(quality, 1, 4) : 1;
+
+            switch (targetQuality)
+            {
+                case 1:
+                    return maxRange.Value;
+                case 2:
+                    return maxRange2.Value;
+                case 3:
+                    return maxRange3.Value;
+                case 4:
+                    return maxRange4.Value;
+            };
+
+            return maxRange.Value;
+        }
+
+        public static float GetPointIntensity(int quality)
+        {
+            int targetQuality = getFeaturesByUpgrade.Value ? Mathf.Clamp(quality, 1, 4) : 1;
+
+            switch (targetQuality)
+            {
+                case 1:
+                    return pointIntensity.Value;
+                case 2:
+                    return pointIntensity2.Value;
+                case 3:
+                    return pointIntensity3.Value;
+                case 4:
+                    return pointIntensity4.Value;
+            };
+
+            return pointIntensity.Value;
+        }
+
+        public static float GetPointRange(int quality)
+        {
+            int targetQuality = getFeaturesByUpgrade.Value ? Mathf.Clamp(quality, 1, 4) : 1;
+
+            switch (targetQuality)
+            {
+                case 1:
+                    return pointRange.Value;
+                case 2:
+                    return pointRange2.Value;
+                case 3:
+                    return pointRange3.Value;
+                case 4:
+                    return pointRange4.Value;
+            };
+
+            return pointRange.Value;
         }
 
     }
