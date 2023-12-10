@@ -3,7 +3,6 @@ using static CircletExtended.CircletExtended;
 using System.Runtime.CompilerServices;
 using System;
 using System.Linq;
-using UnityEngine;
 
 namespace CircletExtended
 {
@@ -67,12 +66,7 @@ namespace CircletExtended
 
             if (__instance.m_helmetItem != null && __instance.m_helmetItem.m_shared.m_name == itemDropNameHelmetDverger)
             {
-                __instance.UnequipItem(__instance.GetCirclet().circlet, triggerEquipEffects);
-                return;
-            }
-
-            if (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Helmet)
-            {
+                LogInfo("Unequipping circlet on circlet equipment");
                 __instance.UnequipItem(__instance.GetCirclet().circlet, triggerEquipEffects);
                 return;
             }
@@ -123,6 +117,21 @@ namespace CircletExtended
 
             if (triggerEquipEffects)
                 __instance.TriggerEquipEffect(item);
+        }
+    }
+
+    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UnequipAllItems))]
+    public class Humanoid_UnequipAllItems_CircletOnTop
+    {
+        public static void Postfix(Humanoid __instance)
+        {
+            if (!modEnabled.Value)
+                return;
+
+            if (!enablePutOnTop.Value)
+                return;
+
+            __instance.UnequipItem(__instance.GetCirclet().circlet, triggerEquipEffects: false); 
         }
     }
 

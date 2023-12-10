@@ -73,5 +73,8 @@ https://valheim.thunderstore.io/package/Azumatt/Official_BepInEx_ConfigurationMa
 
 ## Changelog
 
+v 1.0.1
+* fixed nasty bug when equipped in EAQS slots item dissapear
+
 v 1.0.0
 * Initial release

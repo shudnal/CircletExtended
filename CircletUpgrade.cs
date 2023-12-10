@@ -126,6 +126,22 @@ namespace CircletExtended
         }
     }
 
+    [HarmonyPatch(typeof(Inventory), nameof(Inventory.Load))]
+    public class Inventory_Load_CircletStats
+    {
+        public static void Postfix(Inventory __instance)
+        {
+            if (!modEnabled.Value)
+                return;
+
+            List<ItemDrop.ItemData> items = new List<ItemDrop.ItemData>();
+            __instance.GetAllItems(itemDropNameHelmetDverger, items);
+
+            foreach (ItemDrop.ItemData item in items)
+                PatchCircletItemData(item);
+        }
+    }
+
     [HarmonyPatch(typeof(ItemDrop), nameof(ItemDrop.Start))]
     public static class ItemDrop_Start_CircletStats
     {
