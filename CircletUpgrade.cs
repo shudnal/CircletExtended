@@ -26,13 +26,7 @@ namespace CircletExtended
             if (removed > 0)
                 LogInfo($"Removed recipe {itemNameHelmetDverger}");
 
-            CraftingStation station = null;
-            foreach (Recipe _recipe in ObjectDB.instance.m_recipes)
-                if (_recipe.m_craftingStation != null && _recipe.m_craftingStation.name != "$piece_forge")
-                {
-                    station = _recipe.m_craftingStation;
-                    break;
-                }
+            CraftingStation station = ObjectDB.instance.m_recipes.FirstOrDefault(rec => rec.m_craftingStation?.m_name == "$piece_forge")?.m_craftingStation;
 
             ItemDrop item = prefab.GetComponent<ItemDrop>();
             PatchCircletItemData(item.m_itemData);
