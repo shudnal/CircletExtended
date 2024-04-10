@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 /package/CircletExtended.dll
 /package/CircletExtended.zip
+/package/thunderstore/CircletExtended.zip
+/package/thunderstore/CircletExtended/CircletExtended.dll

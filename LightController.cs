@@ -54,8 +54,8 @@ namespace CircletExtended
             public int level = 2;
             public int intensity = 100;
             public Color color = new Color(0.25f, 0.38f, 0.37f);
-            public bool shadows = false;
-            public bool spot = true;
+            public bool shadows = true;
+            public bool spot = false;
             public float overload = 1f;
             public bool demister = false;
         }
@@ -98,6 +98,11 @@ namespace CircletExtended
                 player.GetSEMan().RemoveStatusEffect(demisterEffectHash);
         }
 
+        private bool QualityLevelAvailable(int quality)
+        {
+            return !getFeaturesByUpgrade.Value || m_quality >= quality;
+        }
+
         private bool StateChanged(Player player)
         {
             foreach (int hotkey in hotkeys)
@@ -108,11 +113,16 @@ namespace CircletExtended
                     LogInfo($"Toggle {(m_state.on ? "on" : "off")}");
                     return true;
                 }
-                else if (IsShortcutDown(hotkey, toggleSpotShortcut))
+                else if (QualityLevelAvailable(2) && IsShortcutDown(hotkey, toggleSpotShortcut))
                 {
                     m_state.spot = !m_state.spot;
                     LogInfo($"Toggle spot {(m_state.spot ? "on" : "off")}");
                     return true;
+                }
+                else if (enableDemister.Value && QualityLevelAvailable(4) && IsShortcutDown(hotkey, toggleDemisterShortcut))
+                {
+                    m_state.demister = !m_state.demister;
+                    LogInfo($"Toggle demister {(m_state.demister ? "on" : "off")}");
                 }
 
                 if (!m_state.on)
@@ -146,21 +156,16 @@ namespace CircletExtended
                 else if (IsShortcutDown(hotkey, toggleShadowsShortcut))
                 {
                     m_state.shadows = !m_state.shadows;
-                    LogInfo($"Toggle shadows {(m_state.spot ? "on" : "off")}");
+                    LogInfo($"Toggle shadows {(m_state.shadows ? "on" : "off")}");
                     return true;
                 }
-                else if (enableOverload.Value && (!getFeaturesByUpgrade.Value || m_quality >= 3) && IsShortcutDown(hotkey, overloadShortcut))
+                else if (enableOverload.Value && QualityLevelAvailable(3) && IsShortcutDown(hotkey, overloadShortcut))
                 {
                     LogInfo("Overload");
                     if (m_state.overload != 1f)
                         MessageHud.instance.ShowMessage(MessageHud.MessageType.Center, "$item_helmet_dverger: $hud_powernotready");
                     else
                         ApplyOverloadEffect(player);
-                }
-                else if (enableDemister.Value && (!getFeaturesByUpgrade.Value || m_quality >= 4) && IsShortcutDown(hotkey, toggleDemisterShortcut))
-                {
-                    m_state.demister = !m_state.demister;
-                    LogInfo($"Toggle demister {(m_state.demister ? "on" : "off")}");
                 }
             }
 
@@ -423,7 +428,7 @@ namespace CircletExtended
             m_pointIntensity = Mathf.Clamp(GetPointIntensity(m_quality), 0, 10);
             m_pointRange = Mathf.Clamp(GetPointRange(m_quality), 0, 1000);
 
-            m_overloadCharges = overloadChargesPerLevel.Value * (getFeaturesByUpgrade.Value && m_quality <= 3 ? 1 : 2);
+            m_overloadCharges = overloadChargesPerLevel.Value * (QualityLevelAvailable(4) ? 2 : 1);
         }
 
         private void UpdateLights()
@@ -458,6 +463,7 @@ namespace CircletExtended
 
             m_frontLight.enabled = !m_forceOff && m_state.on;
             m_frontLight.shadows = enableShadows.Value && m_state.shadows && m_state.level != m_maxLevel ? LightShadows.Soft : LightShadows.None;
+            m_frontLight.shadowStrength = 1f - m_state.level * 0.1f;
 
             if (m_spotLight != null)
             {

@@ -22,8 +22,7 @@ namespace CircletExtended
             if (prefab == null)
                 return;
 
-            var removed = ___m_recipes.RemoveAll(x => x.name == itemNameHelmetDverger);
-            if (removed > 0)
+            if (___m_recipes.RemoveAll(x => x.name == itemNameHelmetDverger) > 0)
                 LogInfo($"Removed recipe {itemNameHelmetDverger}");
 
             CraftingStation station = ObjectDB.instance.m_recipes.FirstOrDefault(rec => rec.m_craftingStation?.m_name == "$piece_forge")?.m_craftingStation;

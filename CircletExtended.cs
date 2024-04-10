@@ -16,7 +16,7 @@ namespace CircletExtended
     {
         const string pluginID = "shudnal.CircletExtended";
         const string pluginName = "Circlet Extended";
-        const string pluginVersion = "1.0.1";
+        const string pluginVersion = "1.0.2";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -143,7 +143,7 @@ namespace CircletExtended
             configLocked = config("General", "Lock Configuration", defaultValue: true, "Configuration is locked and can be changed by server admins only.");
             loggingEnabled = config("General", "Logging enabled", defaultValue: false, "Enable logging. [Not Synced with Server]", false);
 
-            circletColor = config("Circlet", "Light color", defaultValue: Color.white, "Circlet beam light color. Changing this ingame will change current circlet color [Not Synced with Server]", false);
+            circletColor = config("Circlet", "Light color", defaultValue: new Color(1f, 0.9f, 0.8f, 1f), "Circlet beam light color. Changing this ingame will change current circlet color [Not Synced with Server]", false);
             disableOnSleep = config("Circlet", "Disable when sleeping", defaultValue: true, "Turn off the light when sleeping. [Not Synced with Server]", false);
             enableShadows = config("Circlet", "Enables shadows toggle", defaultValue: true, "Enables option to toggle circlet's light to emit shadows. Disable if it impacts your performance. [Not Synced with Server]", false);
 
