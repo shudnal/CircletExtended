@@ -18,14 +18,14 @@ namespace CircletExtended
             if (!getFeaturesByUpgrade.Value)
                 return;
 
-            GameObject prefab = ObjectDB.instance.GetItemPrefab(itemHashHelmetDverger);
+            GameObject prefab = __instance.GetItemPrefab(itemHashHelmetDverger);
             if (prefab == null)
                 return;
 
             if (___m_recipes.RemoveAll(x => x.name == itemNameHelmetDverger) > 0)
                 LogInfo($"Removed recipe {itemNameHelmetDverger}");
 
-            CraftingStation station = ObjectDB.instance.m_recipes.FirstOrDefault(rec => rec.m_craftingStation?.m_name == "$piece_forge")?.m_craftingStation;
+            CraftingStation station = __instance.m_recipes.FirstOrDefault(rec => rec.m_craftingStation?.m_name == "$piece_forge")?.m_craftingStation;
 
             ItemDrop item = prefab.GetComponent<ItemDrop>();
             PatchCircletItemData(item.m_itemData);
@@ -76,6 +76,8 @@ namespace CircletExtended
                 }
                 recipeRequirements.Add(i, requirements.ToArray());
             }
+
+            demisterForceField = __instance.GetItemPrefab("Demister")?.transform.Find(forceFieldDemisterName)?.gameObject;
         }
     }
 

@@ -38,6 +38,10 @@ namespace CircletExtended
         public static ConfigEntry<bool> disableOnSleep;
         public static ConfigEntry<bool> enableShadows;
 
+        public static ConfigEntry<bool> enableOverloadDemister;
+        public static ConfigEntry<float> overloadDemisterRange;
+        public static ConfigEntry<float> overloadDemisterTime;
+
         public static ConfigEntry<KeyboardShortcut> widenShortcut;
         public static ConfigEntry<KeyboardShortcut> narrowShortcut;
         public static ConfigEntry<KeyboardShortcut> toggleShortcut;
@@ -57,6 +61,9 @@ namespace CircletExtended
         public static int itemHashHelmetDverger = 703889544;
         public static GameObject overloadEffect;
         public static int demisterEffectHash = 0;
+
+        public static GameObject demisterForceField;
+        public const string forceFieldDemisterName = "Particle System Force Field";
 
         public const int maxQuality = 4;
 
@@ -154,6 +161,10 @@ namespace CircletExtended
             enableOverload = config("Circlet - Features", "Enable overload", defaultValue: true, "Enables overload. Press hotkey to blind opponents with a bright flash at the cost of some circlet durability");
             enableDemister = config("Circlet - Features", "Enable demister", defaultValue: true, "Enables demister. Press hotkey to spawn a little wisp to push away the mists");
             enablePutOnTop = config("Circlet - Features", "Enable put on top", defaultValue: true, "Enables equipping circlet on top of other helmet. Equip circlet without using a helmet slot.");
+
+            enableOverloadDemister = config("Circlet - Overload demister", "Enable temporary demister on overload", defaultValue: true, "Push away mist on overload activation");
+            overloadDemisterRange = config("Circlet - Overload demister", "Range", defaultValue: 40f, "Maximum range");
+            overloadDemisterTime = config("Circlet - Overload demister", "Time", defaultValue: 8f, "Time to gradually decrease effect radius");
 
             widenShortcut = config("Hotkeys", "Beam widen", defaultValue: new KeyboardShortcut(KeyCode.RightArrow), "Widen beam shortcut. [Not Synced with Server]", false);
             narrowShortcut = config("Hotkeys", "Beam narrow", defaultValue: new KeyboardShortcut(KeyCode.LeftArrow), "Narrow beam shortcut. [Not Synced with Server]", false);

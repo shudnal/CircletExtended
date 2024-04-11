@@ -26,6 +26,8 @@ namespace CircletExtended
         private bool m_forceOff = false;
         private int m_quality = 1;
 
+        private ParticleSystemForceField m_overloadDemister;
+
         private int m_maxLevel = 3;
         private float m_minAngle = 30f;
         private float m_maxAngle = 110f;
@@ -224,6 +226,9 @@ namespace CircletExtended
 
             StartCoroutine(OverloadIntensity());
 
+            if (enableOverloadDemister.Value && m_overloadDemister != null && overloadDemisterTime.Value != 0f)
+                StartCoroutine(OverloadDemister());
+
             float radius = (float)Math.Tan((m_frontLight.spotAngle / 2) * (Math.PI / 180)) * m_frontLight.range;
 
             RaycastHit[] array = Physics.SphereCastAll(m_frontLight.transform.position, radius, m_frontLight.transform.forward, m_frontLight.range, s_rayMaskCharacters);
@@ -286,7 +291,26 @@ namespace CircletExtended
 
             yield return new WaitForSeconds(1f);
 
+            while (m_state.overload >= 1f)
+            {
+                m_state.overload -= increment;
+                yield return new WaitForFixedUpdate();
+            }
+
             m_state.overload = 1f;
+        }
+
+        public IEnumerator OverloadDemister()
+        {
+            m_overloadDemister.gameObject.SetActive(true);
+
+            for (int i = 0; i < overloadDemisterTime.Value; i++)
+            {
+                m_overloadDemister.endRange = 10f + (overloadDemisterRange.Value - 10f) * (1f - i / overloadDemisterTime.Value);
+                yield return new WaitForSeconds(1f);
+            }
+
+            m_overloadDemister.gameObject.SetActive(false);
         }
 
         public bool IsValidTarget(IDestructible destr)
@@ -338,6 +362,15 @@ namespace CircletExtended
             m_playerAttached = player;
             m_item = item;
             m_zdoIndex = zdoIndex;
+
+            if (enableOverloadDemister.Value && player && (bool)demisterForceField && !m_overloadDemister)
+            {
+                GameObject demister = UnityEngine.Object.Instantiate(demisterForceField, transform);
+                demister.name = forceFieldDemisterName;
+                demister.SetActive(false);
+                m_overloadDemister = demister.GetComponent<ParticleSystemForceField>();
+                m_overloadDemister.endRange = overloadDemisterRange.Value;
+            }
 
             LoadState();
 

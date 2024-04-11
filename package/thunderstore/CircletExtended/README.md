@@ -3,6 +3,8 @@
 
 Customize circlet light. Every circlet preserve its own state. Upgrade circlet to have new features: putting on top, overload and demister.
 
+If you like darker nights you can also check [Firefly](https://thunderstore.io/c/valheim/p/shudnal/Firefly/) mod.
+
 ## Features
 * change the light color
 * change beam width
@@ -44,6 +46,8 @@ Blinded enemy will be staggered so you will have a chance to get a critical blow
 
 After each overload the circlet durability will be damaged a little. Overloaded circlet will take some time to restore its power.
 
+Overload pushes away the Mistlands mists gradually decreasing for set amount of time.
+
 ### Demister
 
 Spawn/despawn the wisplight at will. It's basically controllable wisplight with the utility slot freed for megingjord.
@@ -68,13 +72,3 @@ https://valheim.thunderstore.io/package/Azumatt/Official_BepInEx_ConfigurationMa
 
 ## Mirrors
 [Nexus](https://www.nexusmods.com/valheim/mods/2617)
-
-[Github](https://github.com/shudnal/CircletExtended)
-
-## Changelog
-
-v 1.0.1
-* fixed nasty bug when equipped in EAQS slots item dissapear
-
-v 1.0.0
-* Initial release
