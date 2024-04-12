@@ -59,6 +59,7 @@ The mod most likely will not work with others circlet altering mods
 * The circlets from [CustomDverger](https://valheim.thunderstore.io/package/OdinPlus/CustomDverger/) will not be controlled
 * The light from [HeadLamp](https://valheim.thunderstore.io/package/Alpus/HeadLamp/) will not be controlled
 * The compatibility with [CosmeticSlots](https://valheim.thunderstore.io/package/Frogger/CosmeticSlots/) needs further testing but it may work
+* To provide compatibility with [Jewelcrafting](https://thunderstore.io/c/valheim/p/Smoothbrain/Jewelcrafting/) disable armor stand visual state
 
 ## Installation (manual)
 extract CircletExtended.dll file to your BepInEx\Plugins\ folder

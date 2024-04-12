@@ -581,6 +581,9 @@ namespace CircletExtended
             if (!modEnabled.Value)
                 return;
 
+            if (!visualStateItemDrop.Value)
+                return;
+
             if (__instance.GetPrefabName(__instance.name) != itemNameHelmetDverger)
                 return;
 
@@ -602,6 +605,9 @@ namespace CircletExtended
         private static void Prefix(ItemStand __instance, GameObject ___m_visualItem, string ___m_visualName, int ___m_visualVariant, string itemName, int variant, ref bool __state)
         {
             if (!modEnabled.Value)
+                return;
+
+            if (!visualStateItemStand.Value)
                 return;
 
             if (__instance.GetAttachedItem() != itemNameHelmetDverger)
@@ -643,6 +649,9 @@ namespace CircletExtended
         private static void Prefix(int index, List<ArmorStand.ArmorStandSlot> ___m_slots, string itemName, int variant, ref bool __state)
         {
             if (!modEnabled.Value)
+                return;
+
+            if (!visualStateArmorStand.Value)
                 return;
 
             if (itemName != itemNameHelmetDverger)

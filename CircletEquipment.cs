@@ -179,6 +179,9 @@ namespace CircletExtended
             if (!enablePutOnTop.Value)
                 return;
 
+            if (!visualStateItemStand.Value)
+                return;
+
             __instance.m_supportedTypes.Add(itemTypeCirclet);
         }
     }
@@ -192,6 +195,9 @@ namespace CircletExtended
                 return;
 
             if (!enablePutOnTop.Value)
+                return;
+
+            if (!visualStateArmorStand.Value)
                 return;
 
             __instance.m_slots.Where(x => x.m_slot == VisSlot.Helmet).Do(x => x.m_supportedTypes.Add(itemTypeCirclet));

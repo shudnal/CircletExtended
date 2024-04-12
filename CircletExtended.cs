@@ -42,6 +42,10 @@ namespace CircletExtended
         public static ConfigEntry<float> overloadDemisterRange;
         public static ConfigEntry<float> overloadDemisterTime;
 
+        public static ConfigEntry<bool> visualStateItemDrop;
+        public static ConfigEntry<bool> visualStateItemStand;
+        public static ConfigEntry<bool> visualStateArmorStand;
+
         public static ConfigEntry<KeyboardShortcut> widenShortcut;
         public static ConfigEntry<KeyboardShortcut> narrowShortcut;
         public static ConfigEntry<KeyboardShortcut> toggleShortcut;
@@ -53,25 +57,6 @@ namespace CircletExtended
         public static ConfigEntry<KeyboardShortcut> toggleSpotShortcut;
 
         public static ConfigEntry<KeyboardShortcut> overloadShortcut;
-
-        internal static CircletExtended instance;
-
-        public const string itemNameHelmetDverger = "HelmetDverger";
-        public const string itemDropNameHelmetDverger = "$item_helmet_dverger";
-        public static int itemHashHelmetDverger = 703889544;
-        public static GameObject overloadEffect;
-        public static int demisterEffectHash = 0;
-
-        public static GameObject demisterForceField;
-        public const string forceFieldDemisterName = "Particle System Force Field";
-
-        public const int maxQuality = 4;
-
-        public static List<int> hotkeys = new List<int>();
-
-        public static Dictionary<int, Piece.Requirement[]> recipeRequirements = new Dictionary<int, Piece.Requirement[]>();
-
-        public const ItemDrop.ItemData.ItemType itemTypeCirclet = (ItemDrop.ItemData.ItemType) 55;
 
         public static ConfigEntry<int> maxSteps;
         public static ConfigEntry<float> minAngle;
@@ -112,6 +97,25 @@ namespace CircletExtended
         public static ConfigEntry<float> maxRange4;
         public static ConfigEntry<float> pointIntensity4;
         public static ConfigEntry<float> pointRange4;
+
+        internal static CircletExtended instance;
+
+        public const string itemNameHelmetDverger = "HelmetDverger";
+        public const string itemDropNameHelmetDverger = "$item_helmet_dverger";
+        public static int itemHashHelmetDverger = 703889544;
+        public static GameObject overloadEffect;
+        public static int demisterEffectHash = 0;
+
+        public static GameObject demisterForceField;
+        public const string forceFieldDemisterName = "Particle System Force Field";
+
+        public const int maxQuality = 4;
+
+        public static List<int> hotkeys = new List<int>();
+
+        public static Dictionary<int, Piece.Requirement[]> recipeRequirements = new Dictionary<int, Piece.Requirement[]>();
+
+        public const ItemDrop.ItemData.ItemType itemTypeCirclet = (ItemDrop.ItemData.ItemType) 55;
 
         public static string customDataKey;
 
@@ -165,6 +169,10 @@ namespace CircletExtended
             enableOverloadDemister = config("Circlet - Overload demister", "Enable temporary demister on overload", defaultValue: true, "Push away mist on overload activation");
             overloadDemisterRange = config("Circlet - Overload demister", "Range", defaultValue: 40f, "Maximum range");
             overloadDemisterTime = config("Circlet - Overload demister", "Time", defaultValue: 8f, "Time to gradually decrease effect radius");
+
+            visualStateItemDrop = config("Circlet - Visual state", "Enable itemdrop state", defaultValue: true, "Circlet dropped on the ground will preserve light state");
+            visualStateItemStand = config("Circlet - Visual state", "Enable item stand state", defaultValue: true, "Circlet put on the item stand will preserve light state");
+            visualStateArmorStand = config("Circlet - Visual state", "Enable armor stand state", defaultValue: true, "Circlet put on the armor stand will preserve light state");
 
             widenShortcut = config("Hotkeys", "Beam widen", defaultValue: new KeyboardShortcut(KeyCode.RightArrow), "Widen beam shortcut. [Not Synced with Server]", false);
             narrowShortcut = config("Hotkeys", "Beam narrow", defaultValue: new KeyboardShortcut(KeyCode.LeftArrow), "Narrow beam shortcut. [Not Synced with Server]", false);

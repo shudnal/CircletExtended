@@ -6,6 +6,7 @@
 * spot light is unavailable with circlet quality 1
 * demister could be enabled with lights off
 * overload pushes away the mists
+* new config options to disable visual circlet state for item on the ground, item stands and armor stands (Jewelcrafting compatibility)
 
 # 1.0.1
 * fixed nasty bug when equipped in EAQS slots item dissapear
