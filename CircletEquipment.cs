@@ -21,18 +21,11 @@ namespace CircletExtended
     {
         private static readonly ConditionalWeakTable<Humanoid, HumanoidHelmetCirclet> data = new ConditionalWeakTable<Humanoid, HumanoidHelmetCirclet>();
 
-        public static HumanoidHelmetCirclet GetCirclet(this Humanoid humanoid) => data.GetOrCreateValue(humanoid);
+        public static HumanoidHelmetCirclet GetCircletData(this Humanoid humanoid) => data.GetOrCreateValue(humanoid);
 
-        public static void AddData(this Humanoid humanoid, HumanoidHelmetCirclet value)
-        {
-            try
-            {
-                data.Add(humanoid, value);
-            }
-            catch
-            {
-            }
-        }
+        public static ItemDrop.ItemData GetCirclet(this Humanoid humanoid) => humanoid.GetCircletData().circlet;
+
+        public static ItemDrop.ItemData SetCirclet(this Humanoid humanoid, ItemDrop.ItemData item) => humanoid.GetCircletData().circlet = item;
     }
 
     [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.SetupVisEquipment))]
@@ -46,7 +39,7 @@ namespace CircletExtended
             if (!enablePutOnTop.Value)
                 return;
 
-            ItemDrop.ItemData circletHelmet = __instance.GetCirclet().circlet;
+            ItemDrop.ItemData circletHelmet = __instance.GetCirclet();
 
             string circletName = circletHelmet == null ? (__instance.m_helmetItem != null ? __instance.m_helmetItem.m_dropPrefab.name : "") : circletHelmet.m_dropPrefab.name;
             visEq.SetHelmetItem(circletName);
@@ -64,23 +57,23 @@ namespace CircletExtended
             if (!enablePutOnTop.Value)
                 return;
 
-            if (__instance.m_helmetItem != null && __instance.m_helmetItem.m_shared.m_name == itemDropNameHelmetDverger)
+            if (__instance.m_helmetItem != null && __instance.m_helmetItem.m_shared.m_name == CircletItem.itemDropNameHelmetDverger)
             {
                 LogInfo("Unequipping circlet on circlet equipment");
-                __instance.UnequipItem(__instance.GetCirclet().circlet, triggerEquipEffects);
+                __instance.UnequipItem(__instance.GetCirclet(), triggerEquipEffects);
                 return;
             }
             
-            if (item.m_shared.m_itemType == itemTypeCirclet)
+            if (item.m_shared.m_itemType == CircletItem.GetItemType())
             {
-                bool wasCirclet = __instance.GetCirclet().circlet != null;
+                bool wasCirclet = __instance.GetCirclet() != null;
 
-                __instance.UnequipItem(__instance.GetCirclet().circlet, triggerEquipEffects);
+                __instance.UnequipItem(__instance.GetCirclet(), triggerEquipEffects);
 
                 if (wasCirclet)
                     __instance.m_visEquipment.UpdateEquipmentVisuals();
 
-                __instance.GetCirclet().circlet = item;
+                __instance.SetCirclet(item);
             }
             
             if (__instance.IsItemEquiped(item))
@@ -110,8 +103,8 @@ namespace CircletExtended
             if (item == null)
                 return;
 
-            if (__instance.GetCirclet().circlet == item || __instance.m_helmetItem == null)
-                __instance.GetCirclet().circlet = null;
+            if (__instance.GetCirclet() == item || __instance.m_helmetItem == null)
+                __instance.SetCirclet(null);
 
             __instance.SetupEquipment();
 
@@ -131,7 +124,7 @@ namespace CircletExtended
             if (!enablePutOnTop.Value)
                 return;
 
-            __instance.UnequipItem(__instance.GetCirclet().circlet, triggerEquipEffects: false); 
+            __instance.UnequipItem(__instance.GetCirclet(), triggerEquipEffects: false); 
         }
     }
 
@@ -149,7 +142,7 @@ namespace CircletExtended
             if (item == null)
                 return;
 
-            __result = __result || __instance.GetCirclet().circlet == item;
+            __result = __result || __instance.GetCirclet() == item;
         }
     }
 
@@ -164,7 +157,7 @@ namespace CircletExtended
             if (!enablePutOnTop.Value)
                 return;
 
-            __result = __result || __instance.m_shared.m_itemType == itemTypeCirclet;
+            __result = __result || __instance.m_shared.m_itemType == CircletItem.GetItemType();
         }
     }
 
@@ -182,7 +175,7 @@ namespace CircletExtended
             if (!visualStateItemStand.Value)
                 return;
 
-            __instance.m_supportedTypes.Add(itemTypeCirclet);
+            __instance.m_supportedTypes.Add(CircletItem.GetItemType());
         }
     }
 
@@ -200,7 +193,7 @@ namespace CircletExtended
             if (!visualStateArmorStand.Value)
                 return;
 
-            __instance.m_slots.Where(x => x.m_slot == VisSlot.Helmet).Do(x => x.m_supportedTypes.Add(itemTypeCirclet));
+            __instance.m_slots.Where(x => x.m_slot == VisSlot.Helmet).Do(x => x.m_supportedTypes.Add(CircletItem.GetItemType()));
         }
     }
 

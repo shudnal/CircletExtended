@@ -13,6 +13,12 @@ namespace CircletExtended
     [RequireComponent(typeof(Light))]
     public class DvergerLightController : MonoBehaviour
     {
+        public static GameObject overloadEffect;
+        public static int demisterEffectHash = "Demister".GetStableHashCode();
+
+        public static GameObject demisterForceField;
+        public const string forceFieldDemisterName = "Particle System Force Field";
+
         private ZNetView m_nview;
         
         private Light m_frontLight;
@@ -536,7 +542,7 @@ namespace CircletExtended
             if (!modEnabled.Value)
                 return;
 
-            if (itemHash != itemHashHelmetDverger || __result == null)
+            if (itemHash != CircletItem.itemHashHelmetDverger || __result == null)
                 return;
 
             DvergerLightController component = __result.GetComponent<DvergerLightController>();
@@ -555,17 +561,15 @@ namespace CircletExtended
                 if (player == null)
                     return;
 
-                item = player.GetCirclet().circlet ?? player.m_helmetItem;
+                item = player.GetCirclet() ?? player.m_helmetItem;
                 if (item == null)
                     return;
 
-                if (item.m_dropPrefab.name != itemNameHelmetDverger)
+                if (item.m_dropPrefab.name != CircletItem.itemNameHelmetDverger)
                     return;
 
-                PatchCircletItemData(item);
+                CircletItem.PatchCircletItemData(item);
             }
-
-            instance.ConfigInit();
 
             __instance.UpdateVisuals();
 
@@ -584,7 +588,7 @@ namespace CircletExtended
             if (!visualStateItemDrop.Value)
                 return;
 
-            if (__instance.GetPrefabName(__instance.name) != itemNameHelmetDverger)
+            if (__instance.GetPrefabName(__instance.name) != CircletItem.itemNameHelmetDverger)
                 return;
 
             DvergerLightController component = __instance.GetComponentInChildren<DvergerLightController>();
@@ -610,7 +614,7 @@ namespace CircletExtended
             if (!visualStateItemStand.Value)
                 return;
 
-            if (__instance.GetAttachedItem() != itemNameHelmetDverger)
+            if (__instance.GetAttachedItem() != CircletItem.itemNameHelmetDverger)
                 return;
 
             if (___m_visualItem != null)
@@ -654,7 +658,7 @@ namespace CircletExtended
             if (!visualStateArmorStand.Value)
                 return;
 
-            if (itemName != itemNameHelmetDverger)
+            if (itemName != CircletItem.itemNameHelmetDverger)
                 return;
 
             ArmorStand.ArmorStandSlot armorStandSlot = ___m_slots[index];
@@ -679,7 +683,7 @@ namespace CircletExtended
             ___m_visEquipment.UpdateVisuals();
 
             ArmorStand.ArmorStandSlot armorStandSlot = ___m_slots[index];
-            if (armorStandSlot.m_visualName != itemNameHelmetDverger)
+            if (armorStandSlot.m_visualName != CircletItem.itemNameHelmetDverger)
                 return;
 
             GameObject visualItem = ___m_visEquipment.m_helmetItemInstance;

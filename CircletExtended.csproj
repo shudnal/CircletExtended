@@ -82,7 +82,7 @@
   <ItemGroup>
     <Compile Include="CircletEquipment.cs" />
     <Compile Include="CircletExtended.cs" />
-    <Compile Include="CircletUpgrade.cs" />
+    <Compile Include="CircletItem.cs" />
     <Compile Include="LightController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

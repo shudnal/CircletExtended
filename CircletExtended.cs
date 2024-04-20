@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using System.Collections.Generic;
 using BepInEx;
-using BepInEx.Logging;
 using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
@@ -16,7 +15,7 @@ namespace CircletExtended
     {
         const string pluginID = "shudnal.CircletExtended";
         const string pluginName = "Circlet Extended";
-        const string pluginVersion = "1.0.2";
+        const string pluginVersion = "1.0.3";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -25,6 +24,8 @@ namespace CircletExtended
         public static ConfigEntry<bool> modEnabled;
         private static ConfigEntry<bool> configLocked;
         private static ConfigEntry<bool> loggingEnabled;
+
+        public static ConfigEntry<int> itemSlotType;
 
         public static ConfigEntry<bool> getFeaturesByUpgrade;
         public static ConfigEntry<float> durabilityPerLevel;
@@ -100,24 +101,11 @@ namespace CircletExtended
 
         internal static CircletExtended instance;
 
-        public const string itemNameHelmetDverger = "HelmetDverger";
-        public const string itemDropNameHelmetDverger = "$item_helmet_dverger";
-        public static int itemHashHelmetDverger = 703889544;
-        public static GameObject overloadEffect;
-        public static int demisterEffectHash = 0;
-
-        public static GameObject demisterForceField;
-        public const string forceFieldDemisterName = "Particle System Force Field";
-
-        public const int maxQuality = 4;
-
         public static List<int> hotkeys = new List<int>();
 
         public static Dictionary<int, Piece.Requirement[]> recipeRequirements = new Dictionary<int, Piece.Requirement[]>();
 
-        public const ItemDrop.ItemData.ItemType itemTypeCirclet = (ItemDrop.ItemData.ItemType) 55;
-
-        public static string customDataKey;
+        public static string customDataKey = $"{pluginID}.DvergerLightState";
 
         private void Awake()
         {
@@ -129,8 +117,6 @@ namespace CircletExtended
             _ = configSync.AddLockingConfigEntry(configLocked);
 
             Game.isModded = true;
-
-            customDataKey = $"{pluginID}.DvergerLightState";
         }
 
         private void OnDestroy()
@@ -166,6 +152,10 @@ namespace CircletExtended
             enableDemister = config("Circlet - Features", "Enable demister", defaultValue: true, "Enables demister. Press hotkey to spawn a little wisp to push away the mists");
             enablePutOnTop = config("Circlet - Features", "Enable put on top", defaultValue: true, "Enables equipping circlet on top of other helmet. Equip circlet without using a helmet slot.");
 
+            getFeaturesByUpgrade.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
+            enablePutOnTop.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
+            durabilityPerLevel.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
+
             enableOverloadDemister = config("Circlet - Overload demister", "Enable temporary demister on overload", defaultValue: true, "Push away mist on overload activation");
             overloadDemisterRange = config("Circlet - Overload demister", "Range", defaultValue: 40f, "Maximum range");
             overloadDemisterTime = config("Circlet - Overload demister", "Time", defaultValue: 8f, "Time to gradually decrease effect radius");
@@ -173,6 +163,9 @@ namespace CircletExtended
             visualStateItemDrop = config("Circlet - Visual state", "Enable itemdrop state", defaultValue: true, "Circlet dropped on the ground will preserve light state");
             visualStateItemStand = config("Circlet - Visual state", "Enable item stand state", defaultValue: true, "Circlet put on the item stand will preserve light state");
             visualStateArmorStand = config("Circlet - Visual state", "Enable armor stand state", defaultValue: true, "Circlet put on the armor stand will preserve light state");
+
+            itemSlotType = config("Circlet - Custom slot", "Slot type", defaultValue: 55, "Custom item slot type. Change it only if you have issues with other mods compatibility. Game restart is recommended after change.");
+            itemSlotType.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
 
             widenShortcut = config("Hotkeys", "Beam widen", defaultValue: new KeyboardShortcut(KeyCode.RightArrow), "Widen beam shortcut. [Not Synced with Server]", false);
             narrowShortcut = config("Hotkeys", "Beam narrow", defaultValue: new KeyboardShortcut(KeyCode.LeftArrow), "Narrow beam shortcut. [Not Synced with Server]", false);
@@ -184,6 +177,16 @@ namespace CircletExtended
             decreaseIntensityShortcut = config("Hotkeys - Extra", "Intensity decrease", defaultValue: new KeyboardShortcut(KeyCode.DownArrow, new KeyCode[1] { KeyCode.LeftShift }), "Decrease intensity shortcut. Light becomes darker and have less range. Intensity is capped at 50% [Not Synced with Server]", false);
             toggleShadowsShortcut = config("Hotkeys - Extra", "Toggle shadows", defaultValue: new KeyboardShortcut(KeyCode.LeftArrow, new KeyCode[1] { KeyCode.LeftShift }), "Toggle shadows shortcut. Enables/disables the current light source to emit soft shadows. [Not Synced with Server]", false);
             toggleSpotShortcut = config("Hotkeys - Extra", "Toggle radiance", defaultValue: new KeyboardShortcut(KeyCode.RightArrow, new KeyCode[1] { KeyCode.LeftShift }), "Toggle spotlight shortcut. Enables/disables the radiance when circlet is equipped. [Not Synced with Server]", false);
+
+            widenShortcut.SettingChanged += (sender, args) => FillShortcuts();
+            narrowShortcut.SettingChanged += (sender, args) => FillShortcuts();
+            overloadShortcut.SettingChanged += (sender, args) => FillShortcuts();
+            toggleShortcut.SettingChanged += (sender, args) => FillShortcuts();
+            toggleDemisterShortcut.SettingChanged += (sender, args) => FillShortcuts();
+            increaseIntensityShortcut.SettingChanged += (sender, args) => FillShortcuts();
+            decreaseIntensityShortcut.SettingChanged += (sender, args) => FillShortcuts();
+            toggleShadowsShortcut.SettingChanged += (sender, args) => FillShortcuts();
+            toggleSpotShortcut.SettingChanged += (sender, args) => FillShortcuts();
 
             maxSteps = config("Light - Default", "Max Steps", 3, "Define how many steps of focus the Dverger light beam has. Must be at least 2.");
             minAngle = config("Light - Default", "Min Angle", 30.0f, "The angle of the beam at the narrowest setting.");
@@ -225,9 +228,11 @@ namespace CircletExtended
             pointIntensity4 = config("Light - Quality 4", "Point Intensity", 1.1f, "The intensity of the Dverger light pool on the point light setting.");
             pointRange4 = config("Light - Quality 4", "Point Range", 10.0f, "The range of the Dverger light pool on the point light setting.");
 
-            itemHashHelmetDverger = itemNameHelmetDverger.GetStableHashCode();
-            demisterEffectHash = "Demister".GetStableHashCode();
+            FillShortcuts();
+        }
 
+        private void FillShortcuts()
+        {
             Dictionary<int, int> shortcutsModifiers = new Dictionary<int, int>();
 
             AddShortcut(shortcutsModifiers, widenShortcut);
@@ -260,28 +265,6 @@ namespace CircletExtended
 
         ConfigEntry<T> config<T>(string group, string name, T defaultValue, string description, bool synchronizedSetting = true) => config(group, name, defaultValue, new ConfigDescription(description), synchronizedSetting);
 
-        public static void PatchCircletItemData(ItemDrop.ItemData item)
-        {
-            if (!modEnabled.Value)
-                return;
-
-            if (item == null)
-                return;
-
-            if (getFeaturesByUpgrade.Value)
-            {
-                item.m_shared.m_maxQuality = 4;
-                item.m_shared.m_durabilityPerLevel = durabilityPerLevel.Value;
-                item.m_shared.m_useDurability = item.GetDurabilityPercentage() != 1f || item.m_quality >= 3;
-            }
-
-            if (enablePutOnTop.Value)
-            {
-                if (getFeaturesByUpgrade.Value && item.m_quality >= 2 || !getFeaturesByUpgrade.Value)
-                    item.m_shared.m_itemType = itemTypeCirclet;
-            }
-        }
-    
         public static int GetMaxSteps(int quality)
         {
             int targetQuality = getFeaturesByUpgrade.Value ? Mathf.Clamp(quality, 1, 4) : 1;

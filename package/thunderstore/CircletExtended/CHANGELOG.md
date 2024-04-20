@@ -1,3 +1,7 @@
+# 1.0.3
+* code refinements
+* 
+
 # 1.0.2
 * warmer default config color
 * shadows enabled by default
