@@ -13,12 +13,6 @@ namespace CircletExtended
     [RequireComponent(typeof(Light))]
     public class DvergerLightController : MonoBehaviour
     {
-        public static GameObject overloadEffect;
-        public static int demisterEffectHash = "Demister".GetStableHashCode();
-
-        public static GameObject demisterForceField;
-        public const string forceFieldDemisterName = "Particle System Force Field";
-
         private ZNetView m_nview;
         
         private Light m_frontLight;
@@ -45,6 +39,9 @@ namespace CircletExtended
         private float m_pointRange = 10f;
         private int m_overloadCharges = 50;
 
+        private MeshRenderer m_gemRenderer;
+        private Color m_gemColor;
+
         const int intensityIncrement = 10;
         const int intensityFactorMax = 150;
         const int intensityFactorMin = 50;
@@ -55,6 +52,14 @@ namespace CircletExtended
 
         private static int s_rayMaskSolids = 0;
         private static int s_rayMaskCharacters = 0;
+
+        private static readonly MaterialPropertyBlock s_matBlock = new MaterialPropertyBlock();
+
+        public static GameObject overloadEffect;
+        public static int demisterEffectHash = "Demister".GetStableHashCode();
+
+        public static GameObject demisterForceField;
+        public const string forceFieldDemisterName = "Particle System Force Field";
 
         private class LightState
         {
@@ -71,11 +76,27 @@ namespace CircletExtended
         private void Awake()
         {
             m_nview = GetComponentInParent<ZNetView>();
+            m_gemRenderer = GetComponentInChildren<MeshRenderer>();
         }
 
         private void Start()
         {
             GetSpotLight();
+        }
+
+        private void ApplyGemColor(Color gemColor)
+        {
+            if (m_gemRenderer == null)
+                return;
+
+            if (m_gemColor == gemColor)
+                return;
+
+            m_gemColor = gemColor;
+
+            m_gemRenderer.GetPropertyBlock(s_matBlock, 0);
+            s_matBlock.SetColor("_EmissionColor", m_gemColor);
+            m_gemRenderer.SetPropertyBlock(s_matBlock, 0);
         }
 
         private void Update()
@@ -518,6 +539,8 @@ namespace CircletExtended
                 else if (!m_state.demister && seman.GetStatusEffect(demisterEffectHash) != null)
                     seman.RemoveStatusEffect(demisterEffectHash);
             }
+
+            ApplyGemColor(m_state.color);
         }
         
         private void GetSpotLight()

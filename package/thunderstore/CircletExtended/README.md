@@ -65,11 +65,9 @@ The mod most likely will not work with others circlet altering mods
 extract CircletExtended.dll file to your BepInEx\Plugins\ folder
 
 ## Configurating
-The best way to handle configs is configuration manager. Choose one that works for you:
+The best way to handle configs is [Configuration Manager](https://thunderstore.io/c/valheim/p/shudnal/ConfigurationManager/).
 
-https://www.nexusmods.com/site/mods/529
-
-https://valheim.thunderstore.io/package/Azumatt/Official_BepInEx_ConfigurationManager/
+Or [Official BepInEx Configuration Manager](https://valheim.thunderstore.io/package/Azumatt/Official_BepInEx_ConfigurationManager/).
 
 ## Mirrors
 [Nexus](https://www.nexusmods.com/valheim/mods/2617)

@@ -1,6 +1,6 @@
 # 1.0.3
-* code refinements
-* 
+* Ashlands
+* Circlet gem will take color or circlet color
 
 # 1.0.2
 * warmer default config color
