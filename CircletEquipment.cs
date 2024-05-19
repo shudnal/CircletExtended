@@ -3,7 +3,6 @@ using static CircletExtended.CircletExtended;
 using System.Runtime.CompilerServices;
 using System;
 using System.Linq;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace CircletExtended
@@ -42,7 +41,15 @@ namespace CircletExtended
 
                 ItemDrop.ItemData itemData = __instance.GetCirclet();
 
-                visEq.SetCircletItem((itemData != null) ? itemData.m_dropPrefab.name : "");
+                if (equipCircletUnderHelmet.Value)
+                {
+                    visEq.SetCircletItem((itemData != null) ? itemData.m_dropPrefab.name : "");
+                }
+                else
+                {
+                    string circletName = itemData == null ? (__instance.m_helmetItem != null ? __instance.m_helmetItem.m_dropPrefab.name : "") : itemData.m_dropPrefab.name;
+                    visEq.SetHelmetItem(circletName);
+                }
             }
         }
 
@@ -70,6 +77,7 @@ namespace CircletExtended
         public string m_circletItem = "";
         public GameObject m_circletItemInstance;
         public int m_currentCircletItemHash = 0;
+        public bool m_showCirclet = true;
 
         public static readonly int s_circletItem = "CircletItem".GetStableHashCode();
     }
@@ -96,9 +104,7 @@ namespace CircletExtended
         {
             VisEquipmentCirclet circletData = visEquipment.GetCircletData();
             if (circletData.m_currentCircletItemHash == hash)
-            {
                 return false;
-            }
 
             if ((bool)circletData.m_circletItemInstance)
             {
@@ -108,9 +114,9 @@ namespace CircletExtended
 
             circletData.m_currentCircletItemHash = hash;
             if (hash != 0)
-            {
                 circletData.m_circletItemInstance = visEquipment.AttachItem(hash, 0, visEquipment.m_helmet);
-            }
+
+            circletData.m_showCirclet = true;
 
             return true;
         }
@@ -137,6 +143,34 @@ namespace CircletExtended
 
                 if (__instance.SetCircletEquipped(circletEquipped))
                     __instance.UpdateLodgroup();
+            }
+        }
+
+        [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.UpdateLodgroup))]
+        public static class VisEquipment_UpdateLodgroup_CustomItemType
+        {
+            private static void Prefix(VisEquipment __instance)
+            {
+                if (!modEnabled.Value)
+                    return;
+
+                if (!enablePutOnTop.Value)
+                    return;
+
+                if (__instance.m_lodGroup == null)
+                    return;
+
+                VisEquipmentCirclet circletData = __instance.GetCircletData();
+                if (!(bool)circletData.m_circletItemInstance)
+                    return;
+
+                bool showCirclet = __instance.m_currentHelmetItemHash == 0 || equipWithHelmetsList.Contains(__instance.m_currentHelmetItemHash) || equipWithHelmetsList.Contains(allHelmetsHash);
+                if (circletData.m_showCirclet == showCirclet)
+                    return;
+
+                circletData.m_circletItemInstance.transform.Find("bronzehelmet").gameObject.SetActive(showCirclet);
+                
+                circletData.m_showCirclet = showCirclet;
             }
         }
     }
@@ -187,9 +221,7 @@ namespace CircletExtended
     [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UnequipItem))]
     public static class Humanoid_UnequipItem_CircletOnTop
     {
-        private static void Prefix(Humanoid __instance, ItemDrop.ItemData item, ref bool __state) => __state = __instance.m_helmetItem == item;
-
-        private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, bool triggerEquipEffects, bool __state)
+        private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, bool triggerEquipEffects)
         {
             if (!modEnabled.Value)
                 return;
@@ -199,9 +231,6 @@ namespace CircletExtended
 
             if (item == null)
                 return;
-
-            if (__state)
-                __instance.UnequipItem(__instance.GetCirclet());
 
             if (__instance.GetCirclet() != item)
                 return;

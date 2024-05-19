@@ -5,6 +5,7 @@ using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
 using ServerSync;
+using System;
 
 namespace CircletExtended
 {
@@ -25,8 +26,10 @@ namespace CircletExtended
         private static ConfigEntry<bool> configLocked;
         private static ConfigEntry<bool> loggingEnabled;
 
-        public static ConfigEntry<int> itemSlotType;
         public static ConfigEntry<bool> equipCircletUnderHelmet;
+        public static ConfigEntry<string> equipCircletWithHelmet;
+
+        public static ConfigEntry<int> itemSlotType;
 
         public static ConfigEntry<bool> getFeaturesByUpgrade;
         public static ConfigEntry<float> durabilityPerLevel;
@@ -106,7 +109,11 @@ namespace CircletExtended
 
         public static Dictionary<int, Piece.Requirement[]> recipeRequirements = new Dictionary<int, Piece.Requirement[]>();
 
+        public static HashSet<int> equipWithHelmetsList = new HashSet<int>();
+
         public static string customDataKey = $"{pluginID}.DvergerLightState";
+        public static string allHelmetsString = "AllHelmets";
+        public static int allHelmetsHash = allHelmetsString.GetStableHashCode();
 
         private void Awake()
         {
@@ -141,7 +148,7 @@ namespace CircletExtended
             configLocked = config("General", "Lock Configuration", defaultValue: true, "Configuration is locked and can be changed by server admins only.");
             loggingEnabled = config("General", "Logging enabled", defaultValue: false, "Enable logging. [Not Synced with Server]", false);
 
-            circletColor = config("Circlet", "Light color", defaultValue: new Color(1f, 0.9f, 0.8f, 1f), "Circlet beam light color. Changing this ingame will change current circlet color [Not Synced with Server]", false);
+            circletColor = config("Circlet", "Light color", defaultValue: new Color(1f, 0.9f, 0.75f, 1f), "Circlet beam light color. Changing this ingame will change current circlet color [Not Synced with Server]", false);
             disableOnSleep = config("Circlet", "Disable when sleeping", defaultValue: true, "Turn off the light when sleeping. [Not Synced with Server]", false);
             enableShadows = config("Circlet", "Enables shadows toggle", defaultValue: true, "Enables option to toggle circlet's light to emit shadows. Disable if it impacts your performance. [Not Synced with Server]", false);
 
@@ -161,12 +168,19 @@ namespace CircletExtended
             overloadDemisterRange = config("Circlet - Overload demister", "Range", defaultValue: 40f, "Maximum range");
             overloadDemisterTime = config("Circlet - Overload demister", "Time", defaultValue: 8f, "Time to gradually decrease effect radius");
 
+            equipCircletUnderHelmet = config("Circlet - Put on top", "Equip under helmet", defaultValue: true, "If enabled - Circlet will be invisible if put on top of the helmet." +
+                                                                                                               "\nIf disabled - Circlet will replace helmet");
+            equipCircletWithHelmet = config("Circlet - Put on top", "Show when helmet equipped", defaultValue: "HelmetTrollLeather", "Comma separated list. If you have \"Equip under helmet\" enabled and wear a helmet from that list the Circlet will be shown." +
+                                                                                                                                     "\nAdd identifier \"" + allHelmetsString + "\" to show circlet with every helmet equiped. Use that to test how it looks with different helmets." +
+                                                                                                                                     "\nThere is only Troll Leather Helmet of Vanilla helmets that looks good with Circlet.");
+
+            equipCircletWithHelmet.SettingChanged += (sender, args) => FillHelmets();
+
             visualStateItemDrop = config("Circlet - Visual state", "Enable itemdrop state", defaultValue: true, "Circlet dropped on the ground will preserve light state");
             visualStateItemStand = config("Circlet - Visual state", "Enable item stand state", defaultValue: true, "Circlet put on the item stand will preserve light state");
             visualStateArmorStand = config("Circlet - Visual state", "Enable armor stand state", defaultValue: true, "Circlet put on the armor stand will preserve light state");
 
             itemSlotType = config("Circlet - Custom slot", "Slot type", defaultValue: 55, "Custom item slot type. Change it only if you have issues with other mods compatibility. Game restart is recommended after change.");
-            equipCircletUnderHelmet = config("Circlet - Custom slot", "Equip under helmet", defaultValue: true, "Circlet will be invisible if put on top of the helmet.");
             
             itemSlotType.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
 
@@ -232,6 +246,8 @@ namespace CircletExtended
             pointRange4 = config("Light - Quality 4", "Point Range", 10.0f, "The range of the Dverger light pool on the point light setting.");
 
             FillShortcuts();
+
+            FillHelmets();
         }
 
         private void FillShortcuts()
@@ -249,6 +265,11 @@ namespace CircletExtended
             AddShortcut(shortcutsModifiers, toggleDemisterShortcut);
 
             hotkeys = shortcutsModifiers.OrderByDescending(x => x.Value).Select(x => x.Key).ToList();
+        }
+
+        private void FillHelmets()
+        {
+            equipWithHelmetsList = new HashSet<int>(equipCircletWithHelmet.Value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(c => { return c.Trim().GetStableHashCode(); }));
         }
 
         private void AddShortcut(Dictionary<int, int> shortcuts, ConfigEntry<KeyboardShortcut> shortcut)
