@@ -3,7 +3,9 @@
 
 Customize circlet light. Every circlet preserve its own state. Upgrade circlet to have new features: putting on top, overload and demister.
 
-If you like darker nights you can also check [Firefly](https://thunderstore.io/c/valheim/p/shudnal/Firefly/) mod.
+If you want another light sources you can also check [Firefly](https://thunderstore.io/c/valheim/p/shudnal/Firefly/) and [HipLantern](https://thunderstore.io/c/valheim/p/shudnal/HipLantern/) mods.
+
+To make nights darker you can use [GammaOfNightLights](https://thunderstore.io/c/valheim/p/shudnal/GammaOfNightLights/) mod.
 
 ## Features
 * change the light color
@@ -35,7 +37,11 @@ Default circlet have only configurable light. It easily can be used as configura
 
 ### Put circlet on top
 
-You can equip circlet without it taking an equipment helmet slot. It works with EAQS. The original helmet will not be shown but will provide armor and stats. Circlet will be shown but don't get you extra armor.
+You can equip circlet without it taking an equipment helmet slot. It works with EAQS. The original helmet will stay and circlet will not provide armor and stats. You can disable that feature and circlet will always be visible instead of helmet.
+
+You can configure with what helmet circet will be visible. Currently only troll leather helmet looks fine and it's enabled by default.
+
+Circlet uses its own slot and custom item type. If you want Circlet to take utility slot you can set 18 in `Slot type` config.
 
 ### Overload
 Blind your opponents with a bright flash at the cost of some circlet durability. 

@@ -1,6 +1,9 @@
 # 1.0.3
 * Ashlands
-* Circlet gem will take color or circlet color
+* Circlet gem will take color of circlet light color
+* Circlet will not be unequipped on helmet unequipping
+* Circlet will not hide currently equipped helmet instead circlet will be hidden but still provide light
+* helmet and circlet could be equipped at the same time (by default only troll leather helmet looks fine)
 
 # 1.0.2
 * warmer default config color
