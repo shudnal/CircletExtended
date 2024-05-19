@@ -26,6 +26,7 @@ namespace CircletExtended
         private static ConfigEntry<bool> loggingEnabled;
 
         public static ConfigEntry<int> itemSlotType;
+        public static ConfigEntry<bool> equipCircletUnderHelmet;
 
         public static ConfigEntry<bool> getFeaturesByUpgrade;
         public static ConfigEntry<float> durabilityPerLevel;
@@ -165,6 +166,8 @@ namespace CircletExtended
             visualStateArmorStand = config("Circlet - Visual state", "Enable armor stand state", defaultValue: true, "Circlet put on the armor stand will preserve light state");
 
             itemSlotType = config("Circlet - Custom slot", "Slot type", defaultValue: 55, "Custom item slot type. Change it only if you have issues with other mods compatibility. Game restart is recommended after change.");
+            equipCircletUnderHelmet = config("Circlet - Custom slot", "Equip under helmet", defaultValue: true, "Circlet will be invisible if put on top of the helmet.");
+            
             itemSlotType.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
 
             widenShortcut = config("Hotkeys", "Beam widen", defaultValue: new KeyboardShortcut(KeyCode.RightArrow), "Widen beam shortcut. [Not Synced with Server]", false);

@@ -39,7 +39,10 @@ namespace CircletExtended
             if (enablePutOnTop.Value)
             {
                 if (getFeaturesByUpgrade.Value && item.m_quality >= 2 || !getFeaturesByUpgrade.Value)
+                {
                     item.m_shared.m_itemType = GetItemType();
+                    item.m_shared.m_attachOverride = ItemDrop.ItemData.ItemType.Helmet;
+                }
             }
         }
 

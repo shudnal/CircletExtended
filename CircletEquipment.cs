@@ -3,6 +3,8 @@ using static CircletExtended.CircletExtended;
 using System.Runtime.CompilerServices;
 using System;
 using System.Linq;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace CircletExtended
 {
@@ -26,23 +28,116 @@ namespace CircletExtended
         public static ItemDrop.ItemData GetCirclet(this Humanoid humanoid) => humanoid.GetCircletData().circlet;
 
         public static ItemDrop.ItemData SetCirclet(this Humanoid humanoid, ItemDrop.ItemData item) => humanoid.GetCircletData().circlet = item;
+        
+        [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.SetupVisEquipment))]
+        public static class Humanoid_SetupVisEquipment_CustomItemType
+        {
+            private static void Postfix(Humanoid __instance, VisEquipment visEq)
+            {
+                if (!modEnabled.Value)
+                    return;
+
+                if (!enablePutOnTop.Value)
+                    return;
+
+                ItemDrop.ItemData itemData = __instance.GetCirclet();
+
+                visEq.SetCircletItem((itemData != null) ? itemData.m_dropPrefab.name : "");
+            }
+        }
+
+        [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.GetEquipmentWeight))]
+        public static class Humanoid_GetEquipmentWeight_CustomItemType
+        {
+            private static void Postfix(Humanoid __instance, ref float __result)
+            {
+                if (!modEnabled.Value)
+                    return;
+
+                if (!enablePutOnTop.Value)
+                    return;
+
+                ItemDrop.ItemData itemData = __instance.GetCirclet();
+                if (itemData != null)
+                    __result += itemData.m_shared.m_weight;
+            }
+        }
     }
 
-    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.SetupVisEquipment))]
-    public static class Humanoid_SetupVisEquipment_CircletOnTop
+    [Serializable]
+    public class VisEquipmentCirclet
     {
-        private static void Postfix(Humanoid __instance, VisEquipment visEq)
+        public string m_circletItem = "";
+        public GameObject m_circletItemInstance;
+        public int m_currentCircletItemHash = 0;
+
+        public static readonly int s_circletItem = "CircletItem".GetStableHashCode();
+    }
+
+    public static class VisEquipmentExtension
+    {
+        private static readonly ConditionalWeakTable<VisEquipment, VisEquipmentCirclet> data = new ConditionalWeakTable<VisEquipment, VisEquipmentCirclet>();
+
+        public static VisEquipmentCirclet GetCircletData(this VisEquipment visEquipment) => data.GetOrCreateValue(visEquipment);
+
+        public static void SetCircletItem(this VisEquipment visEquipment, string name)
         {
-            if (!modEnabled.Value)
-                return;
+            VisEquipmentCirclet circletData = visEquipment.GetCircletData();
 
-            if (!enablePutOnTop.Value)
-                return;
+            if (!(circletData.m_circletItem == name))
+            {
+                circletData.m_circletItem = name;
+                if (visEquipment.m_nview.GetZDO() != null && visEquipment.m_nview.IsOwner())
+                    visEquipment.m_nview.GetZDO().Set(VisEquipmentCirclet.s_circletItem, (!string.IsNullOrEmpty(name)) ? name.GetStableHashCode() : 0);
+            }
+        }
 
-            ItemDrop.ItemData circletHelmet = __instance.GetCirclet();
+        public static bool SetCircletEquipped(this VisEquipment visEquipment, int hash)
+        {
+            VisEquipmentCirclet circletData = visEquipment.GetCircletData();
+            if (circletData.m_currentCircletItemHash == hash)
+            {
+                return false;
+            }
 
-            string circletName = circletHelmet == null ? (__instance.m_helmetItem != null ? __instance.m_helmetItem.m_dropPrefab.name : "") : circletHelmet.m_dropPrefab.name;
-            visEq.SetHelmetItem(circletName);
+            if ((bool)circletData.m_circletItemInstance)
+            {
+                UnityEngine.Object.Destroy(circletData.m_circletItemInstance);
+                circletData.m_circletItemInstance = null;
+            }
+
+            circletData.m_currentCircletItemHash = hash;
+            if (hash != 0)
+            {
+                circletData.m_circletItemInstance = visEquipment.AttachItem(hash, 0, visEquipment.m_helmet);
+            }
+
+            return true;
+        }
+
+        [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.UpdateEquipmentVisuals))]
+        public static class VisEquipment_UpdateEquipmentVisuals_CustomItemType
+        {
+            private static void Prefix(VisEquipment __instance)
+            {
+                int circletEquipped = 0;
+                ZDO zDO = __instance.m_nview.GetZDO();
+                if (zDO != null)
+                {
+                    circletEquipped = zDO.GetInt(VisEquipmentCirclet.s_circletItem);
+                }
+                else
+                {
+                    VisEquipmentCirclet circletData = __instance.GetCircletData();
+                    if (!string.IsNullOrEmpty(circletData.m_circletItem))
+                    {
+                        circletEquipped = circletData.m_circletItem.GetStableHashCode();
+                    }
+                }
+
+                if (__instance.SetCircletEquipped(circletEquipped))
+                    __instance.UpdateLodgroup();
+            }
         }
     }
 
@@ -63,18 +158,18 @@ namespace CircletExtended
                 __instance.UnequipItem(__instance.GetCirclet(), triggerEquipEffects);
                 return;
             }
-            
-            if (item.m_shared.m_itemType == CircletItem.GetItemType())
-            {
-                bool wasCirclet = __instance.GetCirclet() != null;
 
-                __instance.UnequipItem(__instance.GetCirclet(), triggerEquipEffects);
+            if (item.m_shared.m_itemType != CircletItem.GetItemType())
+                return;
 
-                if (wasCirclet)
-                    __instance.m_visEquipment.UpdateEquipmentVisuals();
+            bool wasCirclet = __instance.GetCirclet() != null;
 
-                __instance.SetCirclet(item);
-            }
+            __instance.UnequipItem(__instance.GetCirclet(), triggerEquipEffects);
+
+            if (wasCirclet)
+                __instance.m_visEquipment.UpdateEquipmentVisuals();
+
+            __instance.SetCirclet(item);
             
             if (__instance.IsItemEquiped(item))
             {
@@ -92,7 +187,9 @@ namespace CircletExtended
     [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UnequipItem))]
     public static class Humanoid_UnequipItem_CircletOnTop
     {
-        private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, bool triggerEquipEffects)
+        private static void Prefix(Humanoid __instance, ItemDrop.ItemData item, ref bool __state) => __state = __instance.m_helmetItem == item;
+
+        private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, bool triggerEquipEffects, bool __state)
         {
             if (!modEnabled.Value)
                 return;
@@ -103,8 +200,13 @@ namespace CircletExtended
             if (item == null)
                 return;
 
-            if (__instance.GetCirclet() == item || __instance.m_helmetItem == null)
-                __instance.SetCirclet(null);
+            if (__state)
+                __instance.UnequipItem(__instance.GetCirclet());
+
+            if (__instance.GetCirclet() != item)
+                return;
+
+            __instance.SetCirclet(null);
 
             __instance.SetupEquipment();
 
