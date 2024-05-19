@@ -3,7 +3,8 @@
 * Circlet gem will take color of circlet light color
 * Circlet will not be unequipped on helmet unequipping
 * Circlet will not hide currently equipped helmet instead circlet will be hidden but still provide light
-* helmet and circlet could be equipped at the same time (by default only troll leather helmet looks fine)
+* helmet and circlet could be visible at the same time (but by default only troll leather helmet looks fine)
+* spotlight(radiance) will emit correct shadows and will have color of the main light
 
 # 1.0.2
 * warmer default config color

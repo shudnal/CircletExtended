@@ -21,6 +21,7 @@ namespace CircletExtended
         private Player m_playerAttached;
         private ItemDrop.ItemData m_item;
         private int m_zdoIndex;
+        private GameObject m_visual;
 
         private LightState m_state = new LightState();
         private bool m_forceOff = false;
@@ -61,6 +62,14 @@ namespace CircletExtended
         public static GameObject demisterForceField;
         public const string forceFieldDemisterName = "Particle System Force Field";
 
+        public static int s_lightMaskNonPlayer;
+
+        private float m_updateVisualTimer = 0f;
+
+        private static readonly List<DvergerLightController> Instances = new List<DvergerLightController>();
+
+        const int c_characterLayer = 9;
+
         private class LightState
         {
             public bool on = true;
@@ -77,11 +86,38 @@ namespace CircletExtended
         {
             m_nview = GetComponentInParent<ZNetView>();
             m_gemRenderer = GetComponentInChildren<MeshRenderer>();
+            
+            if (s_lightMaskNonPlayer == 0)
+                s_lightMaskNonPlayer = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "piece_nonsolid", "terrain", "character_net", "character_ghost", "hitbox", "character_noenv", "vehicle");
         }
 
         private void Start()
         {
             GetSpotLight();
+
+            m_visual = m_playerAttached?.GetVisual();
+            UpdateVisualLayers();
+        }
+
+        void FixedUpdate()
+        {
+            if (m_updateVisualTimer > 0)
+            {
+                m_updateVisualTimer = Mathf.Max(0f, m_updateVisualTimer - Time.fixedDeltaTime);
+
+                if (m_updateVisualTimer == 0f)
+                    UpdateVisualLayers();
+            }
+        }
+
+        void OnEnable()
+        {
+            Instances.Add(this);
+        }
+
+        void OnDisable()
+        {
+            Instances.Remove(this);
         }
 
         private void ApplyGemColor(Color gemColor)
@@ -529,6 +565,10 @@ namespace CircletExtended
             {
                 m_spotLight.enabled = !m_forceOff && m_state.spot;
                 m_spotLight.intensity = m_state.overload;
+                m_spotLight.color = m_state.color;
+                m_spotLight.shadows = enableShadows.Value && m_state.shadows && m_state.level != m_maxLevel ? LightShadows.Soft : LightShadows.None;
+                m_spotLight.shadowStrength = m_playerAttached != null && m_playerAttached.InInterior() ? 0.9f : 0.8f;
+                m_spotLight.cullingMask = s_lightMaskNonPlayer;
             }
 
             if (m_playerAttached != null && m_nview != null && m_nview.IsValid())
@@ -554,6 +594,37 @@ namespace CircletExtended
 
             if (m_spotLight != null)
                 UpdateLights();
+        }
+
+        private void UpdateVisualLayers()
+        {
+            if (m_visual == null)
+                return;
+
+            for (int i = 0; i < m_visual.transform.childCount; i++)
+            {
+                Transform child = m_visual.transform.GetChild(i);
+                if (child.gameObject.layer == c_characterLayer)
+                    continue;
+
+                child.gameObject.layer = c_characterLayer;
+
+                Transform[] children = child.GetComponentsInChildren<Transform>(includeInactive: true);
+                foreach (Transform chld in children)
+                    chld.gameObject.layer = c_characterLayer;
+            }
+        }
+
+        private void StartUpdateVisualLayers()
+        {
+            m_updateVisualTimer = 0.5f;
+        }
+
+        internal static void UpdateVisualsLayers(GameObject visual)
+        {
+            foreach (DvergerLightController instance in Instances)
+                if (instance.m_visual == visual)
+                    instance.StartUpdateVisualLayers();
         }
     }
 
@@ -723,11 +794,15 @@ namespace CircletExtended
 
             visualItem.AddComponent<DvergerLightController>().Initialize(lights[0], null, null, index);
         }
-
     }
-    
 
-
-
+    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.SetupEquipment))]
+    public static class Humanoid_SetupVisEquipment_AttachLayersFix
+    {
+        private static void Postfix(Humanoid __instance)
+        {
+            DvergerLightController.UpdateVisualsLayers(__instance.m_visual);
+        }
+    }
 
 }
