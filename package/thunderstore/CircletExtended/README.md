@@ -18,6 +18,7 @@ To make nights darker you can use [GammaOfNightLights](https://thunderstore.io/c
 * toggle if the circlet should emit shadows
 * or disable shadows at your side entirely if it impacts the performance while having another people playing with it
 * configure light properties for every quality level
+* circlet will consume fuel when it's equipped by player and its main light is on
 
 Each circlet can be configured individually. Circlet state is synced between clients.
 

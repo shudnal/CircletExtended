@@ -58,6 +58,7 @@ namespace CircletExtended
 
         public static GameObject overloadEffect;
         public static int demisterEffectHash = "Demister".GetStableHashCode();
+        public static Color overloadColor;
 
         public static GameObject demisterForceField;
         public const string forceFieldDemisterName = "Particle System Force Field";
@@ -67,6 +68,7 @@ namespace CircletExtended
         private float m_updateVisualTimer = 0f;
 
         private static readonly List<DvergerLightController> Instances = new List<DvergerLightController>();
+        private static readonly Dictionary<ItemDrop.ItemData, LightState> itemState = new Dictionary<ItemDrop.ItemData, LightState>();
 
         const int c_characterLayer = 9;
 
@@ -113,11 +115,17 @@ namespace CircletExtended
         void OnEnable()
         {
             Instances.Add(this);
+            
+            if (m_item != null && !itemState.ContainsKey(m_item))
+                itemState.Add(m_item, m_state);
         }
 
         void OnDisable()
         {
             Instances.Remove(this);
+
+            if (m_item != null)
+                itemState.Remove(m_item);
         }
 
         private void ApplyGemColor(Color gemColor)
@@ -268,6 +276,9 @@ namespace CircletExtended
                             continue;
                         case "glow":
                             child.gameObject.SetActive(true);
+                            continue;
+                        case "Point light (1)":
+                            overloadColor = child.GetComponent<Light>().color;
                             continue;
                     }
                 }
@@ -438,6 +449,9 @@ namespace CircletExtended
             LoadState();
 
             UpdateLights();
+
+            if (m_item != null && !itemState.ContainsKey(m_item))
+                itemState.Add(m_item, m_state);
         }
 
         private void LoadState()
@@ -545,7 +559,7 @@ namespace CircletExtended
                 m_frontLight.range = Mathf.Lerp(m_minRange, m_maxRange, t);
             }
 
-            m_frontLight.color = m_state.color;
+            m_frontLight.color = m_state.overload == 1f ? m_state.color : Color.Lerp(m_state.color, overloadColor, (m_state.overload - 1.05f) / (overloadIntensityMax - overloadIntensityMin));
 
             float intensityFactor = m_state.intensity / 100f;
 
@@ -565,7 +579,7 @@ namespace CircletExtended
             {
                 m_spotLight.enabled = !m_forceOff && m_state.spot;
                 m_spotLight.intensity = m_state.overload;
-                m_spotLight.color = m_state.color;
+                m_spotLight.color = m_frontLight.color;
                 m_spotLight.shadows = enableShadows.Value && m_state.shadows && m_state.level != m_maxLevel ? LightShadows.Soft : LightShadows.None;
                 m_spotLight.shadowStrength = m_playerAttached != null && m_playerAttached.InInterior() ? 0.9f : 0.8f;
                 m_spotLight.cullingMask = s_lightMaskNonPlayer;
@@ -625,6 +639,11 @@ namespace CircletExtended
             foreach (DvergerLightController instance in Instances)
                 if (instance.m_visual == visual)
                     instance.StartUpdateVisualLayers();
+        }
+
+        public static bool IsCircletLightEnabled(ItemDrop.ItemData item)
+        {
+            return item != null && itemState.ContainsKey(item) && itemState[item].on;
         }
     }
 

@@ -5,6 +5,7 @@
 * Circlet will not hide currently equipped helmet instead circlet will be hidden but still provide light
 * helmet and circlet could be visible at the same time (but by default only troll leather helmet looks fine)
 * spotlight(radiance) will emit correct shadows and will have color of the main light
+* Circlet will consume fuel over time when its main light is on. Default value is 6 hrs for basic circlet adding 2 hrs for every quality lvl resulting in 12 hrs at max quality.
 
 # 1.0.2
 * warmer default config color

@@ -21,7 +21,7 @@ namespace CircletExtended
             return (ItemDrop.ItemData.ItemType)itemSlotType.Value;
         }
 
-        internal static void PatchCircletItemData(ItemDrop.ItemData item)
+        internal static void PatchCircletItemData(ItemDrop.ItemData item, bool inventoryItemUpdate = true)
         {
             if (!modEnabled.Value)
                 return;
@@ -29,12 +29,18 @@ namespace CircletExtended
             if (item == null)
                 return;
 
-            if (getFeaturesByUpgrade.Value)
-            {
-                item.m_shared.m_maxQuality = 4;
-                item.m_shared.m_durabilityPerLevel = durabilityPerLevel.Value;
-                item.m_shared.m_useDurability = item.GetDurabilityPercentage() != 1f || item.m_quality >= 3;
-            }
+            item.m_shared.m_maxQuality = getFeaturesByUpgrade.Value ? 4 : 1;
+            item.m_shared.m_durabilityPerLevel = getFeaturesByUpgrade.Value ? fuelPerLevel.Value : 100;
+            
+            item.m_shared.m_useDurability = UseFuel() || item.GetDurabilityPercentage() != 1f || item.m_quality >= 3;
+            item.m_shared.m_maxDurability = UseFuel() ? fuelMinutes.Value : 1000;
+            item.m_shared.m_useDurabilityDrain = UseFuel() ? 1f : 0f;
+            item.m_shared.m_durabilityDrain = UseFuel() ? Time.fixedDeltaTime * (50f / 60f) : 0f;
+            item.m_shared.m_destroyBroken = false;
+            item.m_shared.m_canBeReparied = true;
+
+            if (!inventoryItemUpdate || item.m_durability > item.GetMaxDurability())
+                item.m_durability = item.GetMaxDurability();
 
             if (enablePutOnTop.Value)
             {
@@ -60,9 +66,19 @@ namespace CircletExtended
 
         internal static void PatchCircletItemOnConfigChange()
         {
-            PatchCircletItemData(circletPrefab?.GetComponent<ItemDrop>()?.m_itemData);
+            PatchCircletItemData(circletPrefab?.GetComponent<ItemDrop>()?.m_itemData, inventoryItemUpdate: false);
 
             PatchInventory(Player.m_localPlayer?.GetInventory());
+        }
+
+        internal static bool UseFuel()
+        {
+            return fuelMinutes.Value > 0;
+        }
+
+        public static bool IsCircletLightEnabled(this ItemDrop.ItemData item)
+        {
+            return DvergerLightController.IsCircletLightEnabled(item);
         }
 
         [HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.Awake))]
@@ -87,7 +103,7 @@ namespace CircletExtended
                 CraftingStation station = __instance.m_recipes.FirstOrDefault(rec => rec.m_craftingStation?.m_name == "$piece_forge")?.m_craftingStation;
 
                 ItemDrop item = circletPrefab.GetComponent<ItemDrop>();
-                PatchCircletItemData(item.m_itemData);
+                PatchCircletItemData(item.m_itemData, inventoryItemUpdate: false);
 
                 Recipe recipe = ScriptableObject.CreateInstance<Recipe>();
                 recipe.name = itemNameHelmetDverger;
@@ -269,7 +285,7 @@ namespace CircletExtended
 
                 ___m_craftRecipe.m_resources = __state.Value.ToArray();
 
-                PatchCircletItemData(___m_craftUpgradeItem);
+                PatchCircletItemData(___m_craftUpgradeItem, inventoryItemUpdate: false);
             }
         }
 
@@ -357,6 +373,30 @@ namespace CircletExtended
                 piece.m_resources = __state.Value.ToArray();
 
                 qualityLevel = __state.Key;
+            }
+        }
+
+        [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UpdateEquipment))]
+        public class Humanoid_UpdateEquipment_CircletEquipmentDrain
+        {
+            public static void Postfix(Humanoid __instance, float dt)
+            {
+                if (!modEnabled.Value)
+                    return;
+
+                if (__instance.IsPlayer() && UseFuel() && __instance.GetCirclet() != null && __instance.GetCirclet().IsCircletLightEnabled())
+                    __instance.DrainEquipedItemDurability(__instance.GetCirclet(), dt);
+            }
+        }
+
+        [HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetTooltip), typeof(ItemDrop.ItemData), typeof(int), typeof(bool), typeof(float))]
+        private class ItemDropItemData_GetTooltip_ItemTooltip
+        {
+            [HarmonyPriority(Priority.Last)]
+            private static void Postfix(ItemDrop.ItemData item, ref string __result)
+            {
+                if (item.m_shared.m_name == itemDropNameHelmetDverger && UseFuel())
+                    __result = __result.Replace("$item_durability", "$piece_fire_fuel");
             }
         }
     }

@@ -32,11 +32,13 @@ namespace CircletExtended
         public static ConfigEntry<int> itemSlotType;
 
         public static ConfigEntry<bool> getFeaturesByUpgrade;
-        public static ConfigEntry<float> durabilityPerLevel;
         public static ConfigEntry<int> overloadChargesPerLevel;
         public static ConfigEntry<bool> enableOverload;
         public static ConfigEntry<bool> enableDemister;
         public static ConfigEntry<bool> enablePutOnTop;
+
+        public static ConfigEntry<int> fuelMinutes;
+        public static ConfigEntry<int> fuelPerLevel;
 
         public static ConfigEntry<Color> circletColor;
 
@@ -154,7 +156,6 @@ namespace CircletExtended
 
             getFeaturesByUpgrade = config("Circlet - Features", "Get features by circlet upgrade", defaultValue: true, "Get circlet features by upgrading it. If False all features are available by default.\n" +
                                                                                                                         "If True the order of upgrades are \"Default\" -> \"Put on top\" -> \"Overload\" -> \"Demister\"");
-            durabilityPerLevel = config("Circlet - Features", "Durability per level", defaultValue: 500f, "Durability added per level");
             overloadChargesPerLevel = config("Circlet - Features", "Overload charges", 50, "How many overload charges is available. It is the fraction of durability being damaged on Overload use. x2 if upgrades are disabled or quality is maximum.");
             enableOverload = config("Circlet - Features", "Enable overload", defaultValue: true, "Enables overload. Press hotkey to blind opponents with a bright flash at the cost of some circlet durability");
             enableDemister = config("Circlet - Features", "Enable demister", defaultValue: true, "Enables demister. Press hotkey to spawn a little wisp to push away the mists");
@@ -162,7 +163,12 @@ namespace CircletExtended
 
             getFeaturesByUpgrade.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
             enablePutOnTop.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
-            durabilityPerLevel.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
+
+            fuelMinutes = config("Circlet - Fuel", "Basic fuel capacity", defaultValue: 360, "Time in minutes required to consume all fuel. Set to 0 to not consume fuel.");
+            fuelPerLevel = config("Circlet - Fuel", "Fuel per level", defaultValue: 120, "Time in minutes added per quality level");
+
+            fuelMinutes.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
+            fuelPerLevel.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
 
             enableOverloadDemister = config("Circlet - Overload demister", "Enable temporary demister on overload", defaultValue: true, "Push away mist on overload activation");
             overloadDemisterRange = config("Circlet - Overload demister", "Range", defaultValue: 40f, "Maximum range");
