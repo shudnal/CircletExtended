@@ -72,6 +72,9 @@ namespace CircletExtended
 
         const int c_characterLayer = 9;
 
+        public static readonly int s_stateHash = "circletState".GetStableHashCode();
+
+        [Serializable]
         private class LightState
         {
             public bool on = true;
@@ -82,6 +85,18 @@ namespace CircletExtended
             public bool spot = false;
             public float overload = 1f;
             public bool demister = false;
+
+            [NonSerialized]
+            public int hash = 0;
+
+            [NonSerialized]
+            public string json = "";
+
+            public void UpdateHash()
+            {
+                json = JsonUtility.ToJson(this);
+                hash = json.GetStableHashCode();
+            }
         }
 
         private void Awake()
@@ -96,6 +111,8 @@ namespace CircletExtended
         private void Start()
         {
             GetSpotLight();
+
+            UpdateLights();
 
             m_visual = m_playerAttached?.GetVisual();
             UpdateVisualLayers();
@@ -148,16 +165,14 @@ namespace CircletExtended
             if (!modEnabled.Value)
                 return;
 
+            m_forceOff = disableOnSleep.Value && m_playerAttached != null && m_playerAttached.InBed();
+
             Player player = Player.m_localPlayer;
-            if (player != null && player == m_playerAttached && player.TakeInput())
-            {
-                m_forceOff = disableOnSleep.Value && player.InBed();
+            if (player != null && player == m_playerAttached && player.TakeInput() && !m_forceOff && StateChanged(player))
+                SaveState();
 
-                if (!m_forceOff && StateChanged(player))
-                    SaveState();
-            }
-
-            UpdateLights();
+            if (m_state.hash == 0 || m_nview != null && m_nview.IsValid() && m_nview.GetZDO().GetInt(s_stateHash, 0) != m_state.hash)
+                UpdateLights();
         }
 
         private void OnDestroy()
@@ -351,7 +366,8 @@ namespace CircletExtended
 
             while (m_state.overload > overloadIntensityMin)
             {
-                m_state.overload -= increment; 
+                m_state.overload -= increment;
+                m_state.UpdateHash();
                 yield return new WaitForFixedUpdate();
             }
 
@@ -360,6 +376,7 @@ namespace CircletExtended
             while (m_state.overload <= 1.05f)
             {
                 m_state.overload += increment;
+                m_state.UpdateHash();
                 yield return new WaitForFixedUpdate();
             }
 
@@ -368,10 +385,12 @@ namespace CircletExtended
             while (m_state.overload >= 1f)
             {
                 m_state.overload -= increment;
+                m_state.UpdateHash();
                 yield return new WaitForFixedUpdate();
             }
 
             m_state.overload = 1f;
+            m_state.UpdateHash();
         }
 
         public IEnumerator OverloadDemister()
@@ -430,7 +449,7 @@ namespace CircletExtended
             }
         }
 
-        public void Initialize(Light light, Player player, ItemDrop.ItemData item, int zdoIndex = 0)
+        public void Initialize(Light light, Player player = null, ItemDrop.ItemData item = null, int zdoIndex = 0)
         {
             m_frontLight = light;
             m_playerAttached = player;
@@ -439,7 +458,7 @@ namespace CircletExtended
 
             if (enableOverloadDemister.Value && player && (bool)demisterForceField && !m_overloadDemister)
             {
-                GameObject demister = UnityEngine.Object.Instantiate(demisterForceField, transform);
+                GameObject demister = Instantiate(demisterForceField, transform);
                 demister.name = forceFieldDemisterName;
                 demister.SetActive(false);
                 m_overloadDemister = demister.GetComponent<ParticleSystemForceField>();
@@ -447,8 +466,6 @@ namespace CircletExtended
             }
 
             LoadState();
-
-            UpdateLights();
 
             if (m_item != null && !itemState.ContainsKey(m_item))
                 itemState.Add(m_item, m_state);
@@ -513,17 +530,20 @@ namespace CircletExtended
 
         private void SaveState()
         {
-            if (m_nview == null || !m_nview.IsValid())
-                return;
-
-            if (m_item == null)
-                return;
-
             m_state.color = circletColor.Value;
 
-            m_item.m_customData[customDataKey] = JsonUtility.ToJson(m_state);
+            m_state.UpdateHash();
 
             ShowMessage();
+        }
+
+        private void SaveStateToItemZDO()
+        {
+            if (m_item != null)
+                m_item.m_customData[customDataKey] = m_state.json;
+            
+            if (m_nview != null && m_nview.IsValid())
+                m_nview.GetZDO().Set(s_stateHash, m_state.hash);
         }
 
         private void SetQuality()
@@ -543,6 +563,9 @@ namespace CircletExtended
 
         private void UpdateLights()
         {
+            if (m_state.hash == 0)
+                m_state.UpdateHash();
+
             if (m_state.level == m_maxLevel)
             {
                 m_frontLight.type = LightType.Point;
@@ -595,6 +618,8 @@ namespace CircletExtended
             }
 
             ApplyGemColor(m_state.color);
+
+            SaveStateToItemZDO();
         }
         
         private void GetSpotLight()
@@ -605,9 +630,6 @@ namespace CircletExtended
             foreach (Light light in m_frontLight.GetComponentsInParent<Light>())
                 if (light != m_frontLight)
                     m_spotLight = light;
-
-            if (m_spotLight != null)
-                UpdateLights();
         }
 
         private void UpdateVisualLayers()
@@ -712,7 +734,7 @@ namespace CircletExtended
             if (lights.Length == 0)
                 return;
 
-            lights[0].gameObject.transform.parent.gameObject.AddComponent<DvergerLightController>().Initialize(lights[0], null, __instance.m_itemData);
+            lights[0].gameObject.transform.parent.gameObject.AddComponent<DvergerLightController>().Initialize(lights[0], item:__instance.m_itemData);
         }
     }
 
@@ -755,7 +777,7 @@ namespace CircletExtended
             if (lights.Length == 0)
                 return;
 
-            ___m_visualItem.AddComponent<DvergerLightController>().Initialize(lights[0], null, null);
+            ___m_visualItem.AddComponent<DvergerLightController>().Initialize(lights[0]);
         }
 
     }
@@ -811,7 +833,7 @@ namespace CircletExtended
             if (lights.Length == 0)
                 return;
 
-            visualItem.AddComponent<DvergerLightController>().Initialize(lights[0], null, null, index);
+            visualItem.AddComponent<DvergerLightController>().Initialize(lights[0], zdoIndex:index);
         }
     }
 

@@ -1,3 +1,6 @@
+# 1.0.4
+* circlet state shared in multiplayer
+
 # 1.0.3
 * Ashlands
 * Circlet gem will take color of circlet light color
