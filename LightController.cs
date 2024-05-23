@@ -25,7 +25,6 @@ namespace CircletExtended
 
         private LightState m_state = new LightState();
         private bool m_forceOff = false;
-        private int m_quality = 1;
 
         private ParticleSystemForceField m_overloadDemister;
 
@@ -57,8 +56,11 @@ namespace CircletExtended
         private static readonly MaterialPropertyBlock s_matBlock = new MaterialPropertyBlock();
 
         public static GameObject overloadEffect;
-        public static int demisterEffectHash = "Demister".GetStableHashCode();
+        public const string overloadItemName = "circletExtendedOverload";
+        public static int overloadItemHash = overloadItemName.GetStableHashCode();
         public static Color overloadColor;
+
+        public static int demisterEffectHash = "Demister".GetStableHashCode();
 
         public static GameObject demisterForceField;
         public const string forceFieldDemisterName = "Particle System Force Field";
@@ -72,7 +74,8 @@ namespace CircletExtended
 
         const int c_characterLayer = 9;
 
-        public static readonly int s_stateHash = "circletState".GetStableHashCode();
+        public static readonly int s_stateHash = "circletStateHash".GetStableHashCode();
+        public static readonly int s_state = "circletState".GetStableHashCode();
 
         [Serializable]
         private class LightState
@@ -83,8 +86,12 @@ namespace CircletExtended
             public Color color = new Color(0.25f, 0.38f, 0.37f);
             public bool shadows = true;
             public bool spot = false;
+            public bool overloaded = false;
             public float overload = 1f;
             public bool demister = false;
+            public int quality = 1;
+            public bool demisted = false;
+            public float demistedrange = 1f;
 
             [NonSerialized]
             public int hash = 0;
@@ -111,8 +118,6 @@ namespace CircletExtended
         private void Start()
         {
             GetSpotLight();
-
-            UpdateLights();
 
             m_visual = m_playerAttached?.GetVisual();
             UpdateVisualLayers();
@@ -169,10 +174,9 @@ namespace CircletExtended
 
             Player player = Player.m_localPlayer;
             if (player != null && player == m_playerAttached && player.TakeInput() && !m_forceOff && StateChanged(player))
-                SaveState();
+                SaveState(showMessage:true);
 
-            if (m_state.hash == 0 || m_nview != null && m_nview.IsValid() && m_nview.GetZDO().GetInt(s_stateHash, 0) != m_state.hash)
-                UpdateLights();
+            UpdateLights();
         }
 
         private void OnDestroy()
@@ -180,19 +184,22 @@ namespace CircletExtended
             if (!modEnabled.Value)
                 return;
 
-            Player player = Player.m_localPlayer;
-            if (player != null && player == m_playerAttached && m_state.demister && player.GetSEMan().GetStatusEffect(demisterEffectHash) != null 
+            Player player = m_playerAttached;
+            if (player != null && m_state.demister && player.GetSEMan().GetStatusEffect(demisterEffectHash) != null 
                     && (player.m_utilityItem == null || player.m_utilityItem.m_shared.m_name != "$item_demister"))
                 player.GetSEMan().RemoveStatusEffect(demisterEffectHash);
         }
 
         private bool QualityLevelAvailable(int quality)
         {
-            return !getFeaturesByUpgrade.Value || m_quality >= quality;
+            return !getFeaturesByUpgrade.Value || m_state.quality >= quality;
         }
 
         private bool StateChanged(Player player)
         {
+            if (m_item != null)
+                m_state.quality = m_item.m_quality;
+
             foreach (int hotkey in hotkeys)
             {
                 if (IsShortcutDown(hotkey, toggleShortcut))
@@ -211,6 +218,7 @@ namespace CircletExtended
                 {
                     m_state.demister = !m_state.demister;
                     LogInfo($"Toggle demister {(m_state.demister ? "on" : "off")}");
+                    return true;
                 }
 
                 if (!m_state.on)
@@ -250,7 +258,7 @@ namespace CircletExtended
                 else if (enableOverload.Value && QualityLevelAvailable(3) && IsShortcutDown(hotkey, overloadShortcut))
                 {
                     LogInfo("Overload");
-                    if (m_state.overload != 1f)
+                    if (m_state.overloaded)
                         MessageHud.instance.ShowMessage(MessageHud.MessageType.Center, "$item_helmet_dverger: $hud_powernotready");
                     else
                         ApplyOverloadEffect(player);
@@ -265,47 +273,13 @@ namespace CircletExtended
             if (m_item == null)
                 return;
             
-            if (overloadEffect == null)
-            {
-                Incinerator incinerator = Resources.FindObjectsOfTypeAll<Incinerator>().FirstOrDefault();
-
-                overloadEffect = Instantiate(incinerator.m_lightingAOEs);
-                overloadEffect.name = "circletExtendedOverload";
-                for (int i = overloadEffect.transform.childCount - 1; i > 0; i--)
-                {
-                    Transform child = overloadEffect.transform.GetChild(i);
-                    switch (child.name)
-                    {
-                        case "AOE_ROD":
-                        case "AOE_AREA":
-                        case "Lighting":
-                        case "lightning":
-                        case "Lighting_rod":
-                        case "Sparcs":
-                        case "sfx_shockwave (1)":
-                        case "poff_ring":
-                        case "shockwave":
-                        case "vfx_RockHit (1)":
-                            child.parent = null;
-                            Destroy(child.gameObject);
-                            continue;
-                        case "glow":
-                            child.gameObject.SetActive(true);
-                            continue;
-                        case "Point light (1)":
-                            overloadColor = child.GetComponent<Light>().color;
-                            continue;
-                    }
-                }
-            }
-
             if (s_rayMaskSolids == 0)
             {
                 s_rayMaskSolids = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "piece_nonsolid", "terrain", "vehicle");
                 s_rayMaskCharacters = LayerMask.GetMask("character", "character_net", "character_ghost", "character_noenv");
             }
 
-            Instantiate(overloadEffect, player.transform.position, m_frontLight.transform.rotation);
+            ZNetScene.instance.SpawnObject(player.transform.position, m_frontLight.transform.rotation, overloadEffect);
 
             if (player.InWater())
             {
@@ -360,6 +334,7 @@ namespace CircletExtended
 
         public IEnumerator OverloadIntensity()
         {
+            m_state.overloaded = true;
             m_state.overload = overloadIntensityMax;
 
             float increment = ((overloadIntensityMax - overloadIntensityMin) / overloadIntensityInterval) * Time.fixedDeltaTime;
@@ -367,7 +342,7 @@ namespace CircletExtended
             while (m_state.overload > overloadIntensityMin)
             {
                 m_state.overload -= increment;
-                m_state.UpdateHash();
+                SaveState();
                 yield return new WaitForFixedUpdate();
             }
 
@@ -376,7 +351,7 @@ namespace CircletExtended
             while (m_state.overload <= 1.05f)
             {
                 m_state.overload += increment;
-                m_state.UpdateHash();
+                SaveState();
                 yield return new WaitForFixedUpdate();
             }
 
@@ -385,51 +360,54 @@ namespace CircletExtended
             while (m_state.overload >= 1f)
             {
                 m_state.overload -= increment;
-                m_state.UpdateHash();
+                SaveState();
                 yield return new WaitForFixedUpdate();
             }
 
             m_state.overload = 1f;
-            m_state.UpdateHash();
+            m_state.overloaded = false;
+            SaveState();
         }
 
         public IEnumerator OverloadDemister()
         {
-            m_overloadDemister.gameObject.SetActive(true);
+            m_state.demisted = true;
+            SaveState();
 
             for (int i = 0; i < overloadDemisterTime.Value; i++)
             {
-                m_overloadDemister.endRange = 10f + (overloadDemisterRange.Value - 10f) * (1f - i / overloadDemisterTime.Value);
+                m_state.demistedrange = 10f + (overloadDemisterRange.Value - 10f) * (1f - i / overloadDemisterTime.Value);
                 yield return new WaitForSeconds(1f);
             }
 
-            m_overloadDemister.gameObject.SetActive(false);
+            m_state.demisted = false;
+            SaveState();
         }
 
         public bool IsValidTarget(IDestructible destr)
-        {
-            Character character = destr as Character;
-            if ((bool)character)
             {
-                if (character == m_playerAttached)
-                    return false;
-
-                if (m_playerAttached != null)
+                Character character = destr as Character;
+                if ((bool)character)
                 {
-                    bool flag = BaseAI.IsEnemy(m_playerAttached, character) || ((bool)character.GetBaseAI() && character.GetBaseAI().IsAggravatable() && m_playerAttached.IsPlayer());
-                    if (!m_playerAttached.IsPlayer() && !flag)
+                    if (character == m_playerAttached)
                         return false;
 
-                    if (m_playerAttached.IsPlayer() && !m_playerAttached.IsPVPEnabled() && !flag)
+                    if (m_playerAttached != null)
+                    {
+                        bool flag = BaseAI.IsEnemy(m_playerAttached, character) || ((bool)character.GetBaseAI() && character.GetBaseAI().IsAggravatable() && m_playerAttached.IsPlayer());
+                        if (!m_playerAttached.IsPlayer() && !flag)
+                            return false;
+
+                        if (m_playerAttached.IsPlayer() && !m_playerAttached.IsPVPEnabled() && !flag)
+                            return false;
+                    }
+
+                    if (character.IsDodgeInvincible())
                         return false;
                 }
 
-                if (character.IsDodgeInvincible())
-                    return false;
+                return true;
             }
-
-            return true;
-        }
 
         private bool IsShortcutDown(int hotkey, ConfigEntry<KeyboardShortcut> shortcut)
         {
@@ -475,6 +453,13 @@ namespace CircletExtended
         {
             if (IsStateLoaded())
                 SetQuality();
+
+            if (m_state.overloaded || m_state.demisted || m_nview != null && m_nview.IsValid() && m_nview.IsOwner() && m_nview.GetZDO().GetInt(s_stateHash, 0) == 0)
+            {
+                m_state.overloaded = false;
+                m_state.demisted = false;
+                SaveState();
+            }
         }
 
         private bool IsStateLoaded()
@@ -484,7 +469,13 @@ namespace CircletExtended
             if (m_item != null)
             {
                 stateJSON = m_item.m_customData.GetValueSafe(customDataKey);
-                m_quality = m_item.m_quality;
+                if (String.IsNullOrWhiteSpace(stateJSON))
+                {
+                    m_state = new LightState();
+                    m_state.quality = m_item.m_quality;
+                    SaveState();
+                }
+
                 LogInfo($"Loading state from item: {stateJSON}");
             }
 
@@ -496,17 +487,21 @@ namespace CircletExtended
                 ItemDrop.LoadFromZDO(item, zdo);
 
                 stateJSON = item.m_customData.GetValueSafe(customDataKey);
-                m_quality = item.m_quality;
 
-                LogInfo($"Loading state from zdo: {stateJSON}");
+                LogInfo($"Loading state from item zdo: {stateJSON}");
 
                 if (String.IsNullOrWhiteSpace(stateJSON))
                 {
                     ItemDrop.LoadFromZDO(m_zdoIndex, item, zdo);
                     stateJSON = item.m_customData.GetValueSafe(customDataKey);
-                    m_quality = item.m_quality;
                     
                     LogInfo($"Loading state from zdo index {m_zdoIndex}: {stateJSON}");
+                }
+
+                if (String.IsNullOrWhiteSpace(stateJSON))
+                {
+                    stateJSON = zdo.GetString(s_state);
+                    LogInfo($"Loading state from zdo state: {stateJSON}");
                 }
             }
 
@@ -523,48 +518,52 @@ namespace CircletExtended
                 }
             }
 
-            m_state.overload = 1f;
-
             return true;
         }
 
-        private void SaveState()
+        private void SaveState(bool showMessage = false)
         {
             m_state.color = circletColor.Value;
 
             m_state.UpdateHash();
 
-            ShowMessage();
-        }
-
-        private void SaveStateToItemZDO()
-        {
             if (m_item != null)
                 m_item.m_customData[customDataKey] = m_state.json;
-            
-            if (m_nview != null && m_nview.IsValid())
+
+            if (m_nview != null && m_nview.IsValid() && m_nview.IsOwner())
+            {
                 m_nview.GetZDO().Set(s_stateHash, m_state.hash);
+                m_nview.GetZDO().Set(s_state, m_state.json);
+            }
+
+            if (showMessage)
+                ShowMessage();
+
+            m_state.hash = 0;
         }
 
         private void SetQuality()
         {
-            m_maxLevel = Mathf.Clamp(GetMaxSteps(m_quality), 1, 50);
-            m_minAngle = Mathf.Clamp(GetMinAngle(m_quality), 1, 360);
-            m_maxAngle = Mathf.Clamp(GetMaxAngle(m_quality), 1, 360);
-            m_minIntensity = Mathf.Clamp(GetMaxIntensity(m_quality), 0, 10);
-            m_maxIntensity = Mathf.Clamp(GetMinIntensity(m_quality), 0, 10);
-            m_minRange = Mathf.Clamp(GetMinRange(m_quality), 0, 1000);
-            m_maxRange = Mathf.Clamp(GetMaxRange(m_quality), 0, 1000);
-            m_pointIntensity = Mathf.Clamp(GetPointIntensity(m_quality), 0, 10);
-            m_pointRange = Mathf.Clamp(GetPointRange(m_quality), 0, 1000);
+            m_maxLevel = Mathf.Clamp(GetMaxSteps(m_state.quality), 1, 50);
+            m_minAngle = Mathf.Clamp(GetMinAngle(m_state.quality), 1, 360);
+            m_maxAngle = Mathf.Clamp(GetMaxAngle(m_state.quality), 1, 360);
+            m_minIntensity = Mathf.Clamp(GetMaxIntensity(m_state.quality), 0, 10);
+            m_maxIntensity = Mathf.Clamp(GetMinIntensity(m_state.quality), 0, 10);
+            m_minRange = Mathf.Clamp(GetMinRange(m_state.quality), 0, 1000);
+            m_maxRange = Mathf.Clamp(GetMaxRange(m_state.quality), 0, 1000);
+            m_pointIntensity = Mathf.Clamp(GetPointIntensity(m_state.quality), 0, 10);
+            m_pointRange = Mathf.Clamp(GetPointRange(m_state.quality), 0, 1000);
 
             m_overloadCharges = overloadChargesPerLevel.Value * (QualityLevelAvailable(4) ? 2 : 1);
         }
 
         private void UpdateLights()
         {
-            if (m_state.hash == 0)
-                m_state.UpdateHash();
+            bool stateChanged = m_nview != null && m_nview.IsValid() && m_nview.GetZDO().GetInt(s_stateHash, 0) != m_state.hash && IsStateLoaded();
+            if (!stateChanged && m_state.hash != 0)
+                return;
+
+            m_state.UpdateHash();
 
             if (m_state.level == m_maxLevel)
             {
@@ -590,7 +589,7 @@ namespace CircletExtended
             m_frontLight.intensity *= intensityFactor;
             m_frontLight.intensity *= m_state.overload;
             
-            float qualityFactor = 1f + m_quality * 0.05f;
+            float qualityFactor = 1f + m_state.quality * 0.05f;
             m_frontLight.range *= qualityFactor;
             m_frontLight.intensity *= qualityFactor;
 
@@ -608,7 +607,7 @@ namespace CircletExtended
                 m_spotLight.cullingMask = s_lightMaskNonPlayer;
             }
 
-            if (m_playerAttached != null && m_nview != null && m_nview.IsValid())
+            if (m_playerAttached != null && m_nview != null && m_nview.IsValid() && QualityLevelAvailable(4) && (m_playerAttached.m_utilityItem == null || m_playerAttached.m_utilityItem.m_shared.m_name != "$item_demister"))
             {
                 SEMan seman = m_playerAttached.GetSEMan();
                 if (m_state.demister && seman.GetStatusEffect(demisterEffectHash) == null)
@@ -617,9 +616,13 @@ namespace CircletExtended
                     seman.RemoveStatusEffect(demisterEffectHash);
             }
 
-            ApplyGemColor(m_state.color);
+            if ((bool)m_overloadDemister)
+            {
+                m_overloadDemister.endRange = m_state.demistedrange;
+                m_overloadDemister.gameObject.SetActive(m_state.demisted);
+            }
 
-            SaveStateToItemZDO();
+            ApplyGemColor(m_state.color);
         }
         
         private void GetSpotLight()
@@ -667,6 +670,50 @@ namespace CircletExtended
         {
             return item != null && itemState.ContainsKey(item) && itemState[item].on;
         }
+
+        public static void RegisterEffects()
+        {
+            demisterForceField = ObjectDB.instance.GetItemPrefab("Demister")?.transform.Find(forceFieldDemisterName)?.gameObject;
+
+            if (!(bool)overloadEffect)
+            {
+                Incinerator incinerator = Resources.FindObjectsOfTypeAll<Incinerator>().FirstOrDefault();
+
+                overloadEffect = InitPrefabClone(incinerator.m_lightingAOEs, overloadItemName);
+                for (int i = overloadEffect.transform.childCount - 1; i > 0; i--)
+                {
+                    Transform child = overloadEffect.transform.GetChild(i);
+                    switch (child.name)
+                    {
+                        case "AOE_ROD":
+                        case "AOE_AREA":
+                        case "Lighting":
+                        case "lightning":
+                        case "Lighting_rod":
+                        case "Sparcs":
+                        case "sfx_shockwave (1)":
+                        case "poff_ring":
+                        case "shockwave":
+                        case "vfx_RockHit (1)":
+                            child.parent = null;
+                            UnityEngine.Object.Destroy(child.gameObject);
+                            continue;
+                        case "glow":
+                            child.gameObject.SetActive(true);
+                            continue;
+                        case "Point light (1)":
+                            overloadColor = child.GetComponent<Light>().color;
+                            continue;
+                    }
+                }
+            }
+
+            if ((bool)overloadEffect && ZNetScene.instance && !ZNetScene.instance.m_namedPrefabs.ContainsKey(overloadItemHash))
+            {
+                ZNetScene.instance.m_prefabs.Add(overloadEffect);
+                ZNetScene.instance.m_namedPrefabs.Add(overloadItemHash, overloadEffect);
+            }
+        }
     }
 
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.AttachItem))]
@@ -696,14 +743,9 @@ namespace CircletExtended
                 if (player == null)
                     return;
 
-                item = player.GetCirclet() ?? player.m_helmetItem;
-                if (item == null)
-                    return;
-
-                if (item.m_dropPrefab.name != CircletItem.itemNameHelmetDverger)
-                    return;
-
-                CircletItem.PatchCircletItemData(item);
+                item = player.GetCirclet();
+                if (item != null)
+                    CircletItem.PatchCircletItemData(item);
             }
 
             __instance.UpdateVisuals();

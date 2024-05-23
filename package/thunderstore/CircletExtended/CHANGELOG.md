@@ -1,3 +1,7 @@
+# 1.0.5
+* circlet doesn't remove wisp spawned from Wisplight utility item
+* circlet state finally shared in multiplayer
+
 # 1.0.4
 * circlet state shared in multiplayer
 

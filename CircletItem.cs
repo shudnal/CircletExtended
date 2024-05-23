@@ -13,7 +13,7 @@ namespace CircletExtended
         public static int itemHashHelmetDverger = itemNameHelmetDverger.GetStableHashCode();
 
         public static GameObject circletPrefab;
-        
+
         public const int maxQuality = 4;
 
         internal static ItemDrop.ItemData.ItemType GetItemType()
@@ -90,6 +90,8 @@ namespace CircletExtended
                 if (!modEnabled.Value)
                     return;
 
+                DvergerLightController.RegisterEffects();
+
                 if (!getFeaturesByUpgrade.Value)
                     return;
 
@@ -151,8 +153,6 @@ namespace CircletExtended
                     }
                     recipeRequirements.Add(i, requirements.ToArray());
                 }
-
-                DvergerLightController.demisterForceField = __instance.GetItemPrefab("Demister")?.transform.Find(DvergerLightController.forceFieldDemisterName)?.gameObject;
             }
         }
 
