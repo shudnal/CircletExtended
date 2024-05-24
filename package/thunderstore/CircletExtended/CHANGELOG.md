@@ -1,3 +1,6 @@
+# 1.0.6
+* circlet disabling on sleep fixed
+
 # 1.0.5
 * circlet doesn't remove wisp spawned from Wisplight utility item
 * circlet state finally shared in multiplayer

@@ -24,7 +24,6 @@ namespace CircletExtended
         private GameObject m_visual;
 
         private LightState m_state = new LightState();
-        private bool m_forceOff = false;
 
         private ParticleSystemForceField m_overloadDemister;
 
@@ -92,6 +91,7 @@ namespace CircletExtended
             public int quality = 1;
             public bool demisted = false;
             public float demistedrange = 1f;
+            public bool forceoff = false;
 
             [NonSerialized]
             public int hash = 0;
@@ -170,10 +170,8 @@ namespace CircletExtended
             if (!modEnabled.Value)
                 return;
 
-            m_forceOff = disableOnSleep.Value && m_playerAttached != null && m_playerAttached.InBed();
-
             Player player = Player.m_localPlayer;
-            if (player != null && player == m_playerAttached && player.TakeInput() && !m_forceOff && StateChanged(player))
+            if (player != null && player == m_playerAttached && player.TakeInput() && StateChanged(player))
                 SaveState(showMessage:true);
 
             UpdateLights();
@@ -195,11 +193,23 @@ namespace CircletExtended
             return !getFeaturesByUpgrade.Value || m_state.quality >= quality;
         }
 
+        private bool ForceOff()
+        {
+            return disableOnSleep.Value && m_playerAttached != null && m_playerAttached.InBed();
+        }
+
         private bool StateChanged(Player player)
         {
             if (m_item != null)
                 m_state.quality = m_item.m_quality;
 
+            if (m_state.forceoff != ForceOff())
+            {
+                m_state.forceoff = ForceOff();
+                LogInfo($"Force off {(m_state.forceoff ? "enabled" : "disabled")}");
+                return true;
+            }
+            
             foreach (int hotkey in hotkeys)
             {
                 if (IsShortcutDown(hotkey, toggleShortcut))
@@ -420,7 +430,7 @@ namespace CircletExtended
             {
                 MessageHud.instance.m_msgQeue.Clear();
                 MessageHud.instance.m_msgQueueTimer = 1f;
-                if (!m_forceOff && m_state.on)
+                if (!m_state.forceoff && m_state.on)
                     MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft, $"$item_helmet_dverger: $msg_level {m_state.level} ({m_state.intensity}%)");
                 else
                     MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft, "$item_helmet_dverger: $hud_off");
@@ -593,13 +603,13 @@ namespace CircletExtended
             m_frontLight.range *= qualityFactor;
             m_frontLight.intensity *= qualityFactor;
 
-            m_frontLight.enabled = !m_forceOff && m_state.on;
+            m_frontLight.enabled = !m_state.forceoff && m_state.on;
             m_frontLight.shadows = enableShadows.Value && m_state.shadows && m_state.level != m_maxLevel ? LightShadows.Soft : LightShadows.None;
             m_frontLight.shadowStrength = 1f - m_state.level * 0.1f;
 
             if (m_spotLight != null)
             {
-                m_spotLight.enabled = !m_forceOff && m_state.spot;
+                m_spotLight.enabled = !m_state.forceoff && m_state.spot;
                 m_spotLight.intensity = m_state.overload;
                 m_spotLight.color = m_frontLight.color;
                 m_spotLight.shadows = enableShadows.Value && m_state.shadows && m_state.level != m_maxLevel ? LightShadows.Soft : LightShadows.None;
