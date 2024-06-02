@@ -1,3 +1,7 @@
+# 1.0.7
+* upgrade recipes made configurable 
+* added balanced recipe to craft Circlet
+
 # 1.0.6
 * circlet disabling on sleep fixed
 

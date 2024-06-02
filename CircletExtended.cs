@@ -16,7 +16,7 @@ namespace CircletExtended
     {
         const string pluginID = "shudnal.CircletExtended";
         const string pluginName = "Circlet Extended";
-        const string pluginVersion = "1.0.6";
+        const string pluginVersion = "1.0.7";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -52,6 +52,11 @@ namespace CircletExtended
         public static ConfigEntry<bool> visualStateItemDrop;
         public static ConfigEntry<bool> visualStateItemStand;
         public static ConfigEntry<bool> visualStateArmorStand;
+
+        public static ConfigEntry<string> circletRecipeQuality1;
+        public static ConfigEntry<string> circletRecipeQuality2;
+        public static ConfigEntry<string> circletRecipeQuality3;
+        public static ConfigEntry<string> circletRecipeQuality4;
 
         public static ConfigEntry<KeyboardShortcut> widenShortcut;
         public static ConfigEntry<KeyboardShortcut> narrowShortcut;
@@ -170,6 +175,7 @@ namespace CircletExtended
             enablePutOnTop = config("Circlet - Features", "Enable put on top", defaultValue: true, "Enables equipping circlet on top of other helmet. Equip circlet without using a helmet slot.");
 
             getFeaturesByUpgrade.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
+            getFeaturesByUpgrade.SettingChanged += (sender, args) => CircletItem.FillRecipe();
             enablePutOnTop.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
 
             fuelMinutes = config("Circlet - Fuel", "Basic fuel capacity", defaultValue: 360, "Time in minutes required to consume all fuel. Set to 0 to not consume fuel.");
@@ -189,6 +195,16 @@ namespace CircletExtended
                                                                                                                                      "\nThere is only Troll Leather Helmet of Vanilla helmets that looks good with Circlet.");
 
             equipCircletWithHelmet.SettingChanged += (sender, args) => FillHelmets();
+
+            circletRecipeQuality1 = config("Circlet - Recipe", "Create", defaultValue: "HelmetBronze:1,Ruby:1,SilverNecklace:1,SurtlingCore:10", "Recipe to create circet");
+            circletRecipeQuality2 = config("Circlet - Recipe", "Upgrade quality 2", defaultValue: "Resin:20,LeatherScraps:10,IronNails:10,Chain:1", "Recipe to upgrade circet to quality 2");
+            circletRecipeQuality3 = config("Circlet - Recipe", "Upgrade quality 3", defaultValue: "Thunderstone:5,Silver:1,JuteRed:2", "Recipe to upgrade circet to quality 3");
+            circletRecipeQuality4 = config("Circlet - Recipe", "Upgrade quality 4", defaultValue: "Demister:1,BlackCore:1", "Recipe to upgrade circet to quality 4");
+
+            circletRecipeQuality1.SettingChanged += (sender, args) => CircletItem.FillRecipe();
+            circletRecipeQuality2.SettingChanged += (sender, args) => CircletItem.FillRecipe();
+            circletRecipeQuality3.SettingChanged += (sender, args) => CircletItem.FillRecipe();
+            circletRecipeQuality4.SettingChanged += (sender, args) => CircletItem.FillRecipe();
 
             visualStateItemDrop = config("Circlet - Visual state", "Enable itemdrop state", defaultValue: true, "Circlet dropped on the ground will preserve light state");
             visualStateItemStand = config("Circlet - Visual state", "Enable item stand state", defaultValue: true, "Circlet put on the item stand will preserve light state");

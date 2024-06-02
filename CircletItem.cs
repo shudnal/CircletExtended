@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -81,78 +82,102 @@ namespace CircletExtended
             return DvergerLightController.IsCircletLightEnabled(item);
         }
 
+        internal static void FillRecipe()
+        {
+            if (!ObjectDB.instance)
+                return;
+
+            if (ObjectDB.instance.m_recipes.RemoveAll(x => x.name == itemNameHelmetDverger) > 0)
+                LogInfo($"Removed recipe {itemNameHelmetDverger}");
+
+            circletPrefab = ObjectDB.instance.GetItemPrefab(itemHashHelmetDverger);
+            if (circletPrefab == null)
+                return;
+
+            ItemDrop item = circletPrefab.GetComponent<ItemDrop>();
+            PatchCircletItemData(item.m_itemData, inventoryItemUpdate: false);
+
+            if (!getFeaturesByUpgrade.Value)
+                return;
+
+            FillRecipeRequirements();
+
+            CraftingStation station = ObjectDB.instance.m_recipes.FirstOrDefault(rec => rec.m_craftingStation?.m_name == "$piece_forge")?.m_craftingStation;
+
+            Recipe recipe = ScriptableObject.CreateInstance<Recipe>();
+            recipe.name = itemNameHelmetDverger;
+            recipe.m_amount = 1;
+            recipe.m_minStationLevel = 3;
+            recipe.m_item = item;
+            recipe.m_enabled = true;
+
+            if (station != null)
+                recipe.m_craftingStation = station;
+
+            recipe.m_resources = recipeRequirements[1];
+
+            ObjectDB.instance.m_recipes.Add(recipe);
+        }
+
+        private static void FillRecipeRequirements()
+        {
+            recipeRequirements.Clear();
+            for (int quality = 0; quality <= 5; quality++)
+                recipeRequirements.Add(quality, GetRequirements(quality));
+        }
+
+        private static string GetRecipe(int quality)
+        {
+            return quality switch
+            {
+                1 => circletRecipeQuality1.Value,
+                2 => circletRecipeQuality2.Value,
+                3 => circletRecipeQuality3.Value,
+                4 => circletRecipeQuality4.Value,
+                _ => ""
+            };
+        }
+
+        private static Piece.Requirement[] GetRequirements(int quality)
+        {
+            List<Piece.Requirement> requirements = new List<Piece.Requirement>();
+
+            foreach (string requirement in GetRecipe(quality).Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                string[] req = requirement.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
+                if (req.Length != 2)
+                    continue;
+
+                int amount = int.Parse(req[1]);
+                if (amount <= 0)
+                    continue;
+
+                var prefab = ObjectDB.instance.GetItemPrefab(req[0].Trim());
+                if (prefab == null)
+                    continue;
+
+                requirements.Add(new Piece.Requirement()
+                {
+                    m_amount = amount,
+                    m_resItem = prefab.GetComponent<ItemDrop>(),
+                });
+            };
+
+            return requirements.ToArray();
+        }
+
         [HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.Awake))]
         public static class ObjectDB_Awake_CircletStats
         {
             [HarmonyPriority(Priority.Last)]
-            private static void Postfix(ObjectDB __instance, ref List<Recipe> ___m_recipes)
+            private static void Postfix()
             {
                 if (!modEnabled.Value)
                     return;
 
                 DvergerLightController.RegisterEffects();
 
-                if (!getFeaturesByUpgrade.Value)
-                    return;
-
-                circletPrefab = __instance.GetItemPrefab(itemHashHelmetDverger);
-                if (circletPrefab == null)
-                    return;
-
-                if (___m_recipes.RemoveAll(x => x.name == itemNameHelmetDverger) > 0)
-                    LogInfo($"Removed recipe {itemNameHelmetDverger}");
-
-                CraftingStation station = __instance.m_recipes.FirstOrDefault(rec => rec.m_craftingStation?.m_name == "$piece_forge")?.m_craftingStation;
-
-                ItemDrop item = circletPrefab.GetComponent<ItemDrop>();
-                PatchCircletItemData(item.m_itemData, inventoryItemUpdate: false);
-
-                Recipe recipe = ScriptableObject.CreateInstance<Recipe>();
-                recipe.name = itemNameHelmetDverger;
-                recipe.m_amount = 1;
-                recipe.m_minStationLevel = 3;
-                recipe.m_item = item;
-                recipe.m_enabled = true;
-
-                if (station != null)
-                    recipe.m_craftingStation = station;
-
-                recipe.m_resources = new Piece.Requirement[1] {new Piece.Requirement()
-                {
-                    m_amount = 1,
-                    m_resItem = item,
-                }};
-
-                ___m_recipes.Add(recipe);
-
-                recipeRequirements.Clear();
-                for (int i = 0; i <= 5; i++)
-                {
-                    List<Piece.Requirement> requirements = new List<Piece.Requirement>();
-                    switch (i)
-                    {
-                        case 2:
-                            requirements.Add(new Piece.Requirement() { m_resItem = ObjectDB.instance.GetItemPrefab("Resin").GetComponent<ItemDrop>(), m_amount = 20 });
-                            requirements.Add(new Piece.Requirement() { m_resItem = ObjectDB.instance.GetItemPrefab("LeatherScraps").GetComponent<ItemDrop>(), m_amount = 10 });
-                            requirements.Add(new Piece.Requirement() { m_resItem = ObjectDB.instance.GetItemPrefab("IronNails").GetComponent<ItemDrop>(), m_amount = 10 });
-                            requirements.Add(new Piece.Requirement() { m_resItem = ObjectDB.instance.GetItemPrefab("Chain").GetComponent<ItemDrop>(), m_amount = 1 });
-                            break;
-                        case 3:
-                            requirements.Add(new Piece.Requirement() { m_resItem = ObjectDB.instance.GetItemPrefab("Thunderstone").GetComponent<ItemDrop>(), m_amount = 5 });
-                            requirements.Add(new Piece.Requirement() { m_resItem = ObjectDB.instance.GetItemPrefab("Silver").GetComponent<ItemDrop>(), m_amount = 1 });
-                            requirements.Add(new Piece.Requirement() { m_resItem = ObjectDB.instance.GetItemPrefab("JuteRed").GetComponent<ItemDrop>(), m_amount = 2 });
-                            break;
-                        case 4:
-                            requirements.Add(new Piece.Requirement() { m_resItem = ObjectDB.instance.GetItemPrefab("Demister").GetComponent<ItemDrop>(), m_amount = 1 });
-                            requirements.Add(new Piece.Requirement() { m_resItem = ObjectDB.instance.GetItemPrefab("BlackCore").GetComponent<ItemDrop>(), m_amount = 1 });
-                            break;
-
-                        default:
-                            requirements.Add(new Piece.Requirement() { m_resItem = ObjectDB.instance.GetItemPrefab(itemNameHelmetDverger).GetComponent<ItemDrop>(), m_amount = 1 });
-                            break;
-                    }
-                    recipeRequirements.Add(i, requirements.ToArray());
-                }
+                FillRecipe();
             }
         }
 

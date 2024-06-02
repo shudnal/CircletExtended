@@ -23,6 +23,11 @@ To make nights darker you can use [GammaOfNightLights](https://thunderstore.io/c
 Each circlet can be configured individually. Circlet state is synced between clients.
 
 ## Extra features
+Circlet could be crafted in forge
+* Create - HelmetBronze x1, Ruby x1, Silver Necklace x1, Surtling Core x10
+
+Circlet can not be crafted if you disabled getting features by quality upgrade as it disables the recipe completely.
+
 Upgrade the circlet at the forge to get new features bound to quality level.
 * Level 2 - Resin x20, Leather scraps x10, Iron nails x10, Chain x1
 * Level 3 - Thunder stone x5, Silver x1, Red jute x2
@@ -32,6 +37,7 @@ Recipes are balanced to get different features depending on overall progress.
 
 Default circlet have only configurable light. It easily can be used as configurable light source when it placed on a stand.
 
+* To get a chance of possessing circlet if you are still yet to find Haldor but you're lucky to find Silver Necklace in meadows or mountain graves.
 * To get a possibility to equip circlet while equipping a helmet you should discover iron and spend a valuable chain to get an upgrade.
 * To get the overload ability which will be extra handy at the plains you should spend some money, discover silver and clear a couple of caves.
 * To get an ability to spawn wisplight without need of equipping wisplight in utility slot and much more valuable ability to despawn wisplight when you are not in need you should craft a wisplight, clear some mines and spend valuable resource - black core.
@@ -67,6 +73,7 @@ The mod most likely will not work with others circlet altering mods
 * The light from [HeadLamp](https://valheim.thunderstore.io/package/Alpus/HeadLamp/) will not be controlled
 * The compatibility with [CosmeticSlots](https://valheim.thunderstore.io/package/Frogger/CosmeticSlots/) needs further testing but it may work
 * To provide compatibility with [Jewelcrafting](https://thunderstore.io/c/valheim/p/Smoothbrain/Jewelcrafting/) disable armor stand visual state
+* If you experience incompatibility with any mod feel free to post on Nexus
 
 ## Installation (manual)
 extract CircletExtended.dll file to your BepInEx\Plugins\ folder

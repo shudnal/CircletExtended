@@ -259,6 +259,43 @@ namespace CircletExtended
         }
     }
 
+    [HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveItem), new Type[] { typeof(ItemDrop.ItemData) })]
+    public static class Inventory_RemoveItem_CustomItemType
+    {
+        private static void Postfix(Inventory __instance, ItemDrop.ItemData item)
+        {
+            if (__instance != Player.m_localPlayer?.GetInventory())
+                return;
+
+            if (item == null || item != Player.m_localPlayer.GetCirclet())
+                return;
+
+            Player.m_localPlayer.SetCirclet(null);
+
+            Player.m_localPlayer.SetupEquipment();
+        }
+    }
+
+    [HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveItem), new Type[] { typeof(string), typeof(int), typeof(int), typeof(bool) })]
+    public static class Inventory_RemoveItem_ByName_CustomItemType
+    {
+        private static void Postfix(Inventory __instance, string name)
+        {
+            if (__instance != Player.m_localPlayer?.GetInventory())
+                return;
+
+            if (name != CircletItem.itemDropNameHelmetDverger)
+                return;
+
+            if (Player.m_localPlayer.GetCirclet() != null && __instance.ContainsItem(Player.m_localPlayer.GetCirclet()))
+                return;
+
+            Player.m_localPlayer.SetCirclet(null);
+
+            Player.m_localPlayer.SetupEquipment();
+        }
+    }
+
     [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.IsItemEquiped))]
     public static class Humanoid_IsItemEquiped_CircletOnTop
     {
