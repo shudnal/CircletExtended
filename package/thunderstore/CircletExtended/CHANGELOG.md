@@ -1,3 +1,6 @@
+# 1.0.8
+* circlet will be last in list to repair to prevent repair stuck
+
 # 1.0.7
 * upgrade recipes made configurable 
 * added balanced recipe to craft Circlet

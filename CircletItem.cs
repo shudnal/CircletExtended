@@ -332,7 +332,7 @@ namespace CircletExtended
             }
 
             [HarmonyPriority(Priority.First)]
-            public static void Prefix(ref int quality, ref KeyValuePair<Recipe, ItemDrop.ItemData> ___m_selectedRecipe, ref KeyValuePair<int, Piece.Requirement[]> __state, Recipe ___m_craftRecipe)
+            public static void Prefix(ref int quality, ref KeyValuePair<Recipe, ItemDrop.ItemData> ___m_selectedRecipe, ref KeyValuePair<int, Piece.Requirement[]> __state)
             {
                 if (!PatchMethod(___m_selectedRecipe))
                     return;
@@ -345,7 +345,7 @@ namespace CircletExtended
             }
 
             [HarmonyPriority(Priority.Last)]
-            public static void Postfix(ref int quality, ref KeyValuePair<Recipe, ItemDrop.ItemData> ___m_selectedRecipe, KeyValuePair<int, Piece.Requirement[]> __state, Recipe ___m_craftRecipe)
+            public static void Postfix(ref int quality, ref KeyValuePair<Recipe, ItemDrop.ItemData> ___m_selectedRecipe, KeyValuePair<int, Piece.Requirement[]> __state)
             {
                 if (!PatchMethod(___m_selectedRecipe))
                     return;
@@ -424,5 +424,28 @@ namespace CircletExtended
                     __result = __result.Replace("$item_durability", "$piece_fire_fuel");
             }
         }
+
+        [HarmonyPatch(typeof(Inventory), nameof(Inventory.GetWornItems))]
+        public class Inventory_GetWornItems_CircletAlwaysLastToRepair
+        {
+            public static void Postfix(Inventory __instance, List<ItemDrop.ItemData> worn)
+            {
+                if (!modEnabled.Value)
+                    return;
+
+                if (__instance == Player.m_localPlayer?.GetInventory() && UseFuel())
+                {
+                    for (int i = worn.Count - 1; i >= 0; i--)
+                    {
+                        if (worn[i].m_shared.m_name == itemDropNameHelmetDverger && worn[i].m_equipped && (Player.m_localPlayer?.GetCirclet() == worn[i] || Player.m_localPlayer.m_helmetItem == worn[i]))
+                        {
+                            worn.Add(worn[i]);
+                            worn.RemoveAt(i);
+                        }
+                    }
+                }
+            }
+        }
+        
     }
 }
