@@ -370,7 +370,7 @@ namespace CircletExtended
                 if (discover)
                     return false;
 
-                if (piece.m_item.GetPrefabName(piece.m_item.name) != itemNameHelmetDverger)
+                if (piece.m_item?.GetPrefabName(piece.m_item?.name) != itemNameHelmetDverger)
                     return false;
 
                 return true;

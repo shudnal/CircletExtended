@@ -1,3 +1,6 @@
+# 1.0.9
+* fix for really rare exception on crafting
+
 # 1.0.8
 * circlet will be last in list to repair to prevent repair stuck
 
