@@ -1,3 +1,6 @@
+# 1.0.10
+* AzuEPI custom slot support
+
 # 1.0.9
 * fix for really rare exception on crafting
 

@@ -186,7 +186,7 @@ namespace CircletExtended
             if (!enablePutOnTop.Value)
                 return;
 
-            if (__instance.m_helmetItem != null && __instance.m_helmetItem.m_shared.m_name == CircletItem.itemDropNameHelmetDverger)
+            if (CircletItem.IsCircletItem(__instance.m_helmetItem))
             {
                 LogInfo("Unequipping circlet on circlet equipment");
                 __instance.UnequipItem(__instance.GetCirclet(), triggerEquipEffects);
@@ -284,7 +284,7 @@ namespace CircletExtended
             if (__instance != Player.m_localPlayer?.GetInventory())
                 return;
 
-            if (name != CircletItem.itemDropNameHelmetDverger)
+            if (!CircletItem.IsCircletItemDropName(name))
                 return;
 
             if (Player.m_localPlayer.GetCirclet() != null && __instance.ContainsItem(Player.m_localPlayer.GetCirclet()))

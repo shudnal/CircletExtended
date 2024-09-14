@@ -12,11 +12,12 @@ namespace CircletExtended
     [BepInPlugin(pluginID, pluginName, pluginVersion)]
     [BepInIncompatibility("randyknapp.mods.dvergercolor")]
     [BepInIncompatibility("Azumatt.CircletDemister")]
+    [BepInDependency("Azumatt.AzuExtendedPlayerInventory", BepInDependency.DependencyFlags.SoftDependency)]
     public class CircletExtended : BaseUnityPlugin
     {
         const string pluginID = "shudnal.CircletExtended";
         const string pluginName = "Circlet Extended";
-        const string pluginVersion = "1.0.9";
+        const string pluginVersion = "1.0.10";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -30,6 +31,9 @@ namespace CircletExtended
         public static ConfigEntry<string> equipCircletWithHelmet;
 
         public static ConfigEntry<int> itemSlotType;
+        public static ConfigEntry<bool> itemSlotAzuEPI;
+        public static ConfigEntry<string> itemSlotNameAzuEPI;
+        public static ConfigEntry<int> itemSlotIndexAzuEPI;
 
         public static ConfigEntry<bool> getFeaturesByUpgrade;
         public static ConfigEntry<int> overloadChargesPerLevel;
@@ -122,14 +126,6 @@ namespace CircletExtended
         public static string allHelmetsString = "AllHelmets";
         public static int allHelmetsHash = allHelmetsString.GetStableHashCode();
 
-        private const string c_rootObjectName = "_shudnalRoot";
-        private const string c_rootPrefabsName = "Prefabs";
-
-        private static GameObject rootObject;
-        private static GameObject rootPrefabs;
-
-        public static bool prefabInit = false;
-
         private void Awake()
         {
             harmony.PatchAll();
@@ -140,6 +136,9 @@ namespace CircletExtended
             _ = configSync.AddLockingConfigEntry(configLocked);
 
             Game.isModded = true;
+
+            if (itemSlotAzuEPI.Value && AzuExtendedPlayerInventory.API.IsLoaded())
+                AzuExtendedPlayerInventory.API.AddSlot(itemSlotNameAzuEPI.Value, player => player.GetCirclet(), item => CircletItem.IsCircletItem(item), itemSlotIndexAzuEPI.Value);
         }
 
         private void OnDestroy()
@@ -211,7 +210,10 @@ namespace CircletExtended
             visualStateArmorStand = config("Circlet - Visual state", "Enable armor stand state", defaultValue: true, "Circlet put on the armor stand will preserve light state");
 
             itemSlotType = config("Circlet - Custom slot", "Slot type", defaultValue: 55, "Custom item slot type. Change it only if you have issues with other mods compatibility. Game restart is recommended after change.");
-            
+            itemSlotAzuEPI = config("Circlet - Custom slot", "AzuEPI - Create slot", defaultValue: false, "Create custom equipment slot with AzuExtendedPlayerInventory. Game restart is required to apply changes.");
+            itemSlotNameAzuEPI = config("Circlet - Custom slot", "AzuEPI - Slot name", defaultValue: "Circlet", "Custom equipment slot name. Game restart is required to apply changes.");
+            itemSlotIndexAzuEPI = config("Circlet - Custom slot", "AzuEPI - Slot index", defaultValue: -1, "Slot index (position). Game restart is required to apply changes.");
+
             itemSlotType.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
 
             widenShortcut = config("Hotkeys", "Beam widen", defaultValue: new KeyboardShortcut(KeyCode.RightArrow), "Widen beam shortcut. [Not Synced with Server]", false);
@@ -488,73 +490,6 @@ namespace CircletExtended
             };
 
             return pointRange.Value;
-        }
-
-        private static void InitRootObject()
-        {
-            if (rootObject == null)
-                rootObject = GameObject.Find(c_rootObjectName) ?? new GameObject(c_rootObjectName);
-
-            DontDestroyOnLoad(rootObject);
-
-            if (rootPrefabs == null)
-            {
-                rootPrefabs = rootObject.transform.Find(c_rootPrefabsName)?.gameObject;
-
-                if (rootPrefabs == null)
-                {
-                    rootPrefabs = new GameObject(c_rootPrefabsName);
-                    rootPrefabs.transform.SetParent(rootObject.transform, false);
-                    rootPrefabs.SetActive(false);
-                }
-            }
-        }
-
-        internal static GameObject InitPrefabClone(GameObject prefabToClone, string prefabName)
-        {
-            InitRootObject();
-
-            prefabInit = true;
-            GameObject clonedPrefab = Instantiate(prefabToClone, rootPrefabs.transform, false);
-            prefabInit = false;
-            clonedPrefab.name = prefabName;
-
-            return clonedPrefab;
-        }
-
-        [HarmonyPatch(typeof(ZNetView), nameof(ZNetView.Awake))]
-        public static class ZNetView_Awake_AddPrefab
-        {
-            [HarmonyPriority(Priority.First)]
-            private static bool Prefix() => !prefabInit;
-        }
-
-        [HarmonyPatch(typeof(ZSyncTransform), nameof(ZSyncTransform.Awake))]
-        public static class ZSyncTransform_Awake_AddPrefab
-        {
-            [HarmonyPriority(Priority.First)]
-            private static bool Prefix() => !prefabInit;
-        }
-
-        [HarmonyPatch(typeof(ZSyncTransform), nameof(ZSyncTransform.OnEnable))]
-        public static class ZSyncTransform_OnEnable_AddPrefab
-        {
-            [HarmonyPriority(Priority.First)]
-            private static bool Prefix() => !prefabInit;
-        }
-
-        [HarmonyPatch(typeof(ItemDrop), nameof(ItemDrop.Awake))]
-        public static class ItemDrop_Awake_AddPrefab
-        {
-            [HarmonyPriority(Priority.First)]
-            private static bool Prefix() => !prefabInit;
-        }
-
-        [HarmonyPatch(typeof(ItemDrop), nameof(ItemDrop.Start))]
-        public static class ItemDrop_Start_AddPrefab
-        {
-            [HarmonyPriority(Priority.First)]
-            private static bool Prefix() => !prefabInit;
         }
     }
 }

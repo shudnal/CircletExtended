@@ -22,6 +22,26 @@ namespace CircletExtended
             return (ItemDrop.ItemData.ItemType)itemSlotType.Value;
         }
 
+        internal static bool IsCircletItem(ItemDrop item)
+        {
+            return item != null && (IsCircletItemName(item.GetPrefabName(item.name)) || IsCircletItem(item.m_itemData));
+        }
+
+        internal static bool IsCircletItem(ItemDrop.ItemData item)
+        {
+            return item != null && (IsCircletItemDropName(item.m_shared.m_name) || item.m_dropPrefab != null && IsCircletItemName(item.m_dropPrefab.name));
+        }
+
+        internal static bool IsCircletItemDropName(string name)
+        {
+            return name == itemDropNameHelmetDverger;
+        }
+
+        internal static bool IsCircletItemName(string name)
+        {
+            return name == itemNameHelmetDverger;
+        }
+
         internal static void PatchCircletItemData(ItemDrop.ItemData item, bool inventoryItemUpdate = true)
         {
             if (!modEnabled.Value)
@@ -87,7 +107,7 @@ namespace CircletExtended
             if (!ObjectDB.instance)
                 return;
 
-            if (ObjectDB.instance.m_recipes.RemoveAll(x => x.name == itemNameHelmetDverger) > 0)
+            if (ObjectDB.instance.m_recipes.RemoveAll(x => IsCircletItemName(x.name)) > 0)
                 LogInfo($"Removed recipe {itemNameHelmetDverger}");
 
             circletPrefab = ObjectDB.instance.GetItemPrefab(itemHashHelmetDverger);
@@ -192,7 +212,7 @@ namespace CircletExtended
                 if (!getFeaturesByUpgrade.Value)
                     return;
 
-                if (item.m_shared.m_name != itemDropNameHelmetDverger)
+                if (!IsCircletItem(item))
                     return;
 
                 PatchCircletItemData(item);
@@ -232,7 +252,7 @@ namespace CircletExtended
         [HarmonyPatch(typeof(ItemDrop), nameof(ItemDrop.Start))]
         public static class ItemDrop_Start_CircletStats
         {
-            private static void Postfix(ref ItemDrop __instance)
+            private static void Postfix(ItemDrop __instance)
             {
                 if (!modEnabled.Value)
                     return;
@@ -240,7 +260,7 @@ namespace CircletExtended
                 if (!getFeaturesByUpgrade.Value)
                     return;
 
-                if (__instance.GetPrefabName(__instance.name) != itemNameHelmetDverger)
+                if (!IsCircletItem(__instance))
                     return;
 
                 PatchCircletItemData(__instance.m_itemData);
@@ -258,7 +278,7 @@ namespace CircletExtended
                 if (!getFeaturesByUpgrade.Value)
                     return;
 
-                if (__instance.m_resItem.GetPrefabName(__instance.m_resItem.name) == itemNameHelmetDverger)
+                if (IsCircletItem(__instance.m_resItem))
                     __result = qualityLevel > 1 ? 0 : 1;
             }
         }
@@ -277,7 +297,7 @@ namespace CircletExtended
                 if (___m_craftRecipe == null || ___m_craftUpgradeItem == null)
                     return false;
 
-                if (___m_craftUpgradeItem.m_shared.m_name != itemDropNameHelmetDverger)
+                if (!IsCircletItem(___m_craftUpgradeItem))
                     return false;
 
                 return true;
@@ -325,10 +345,7 @@ namespace CircletExtended
                 if (!getFeaturesByUpgrade.Value)
                     return false;
 
-                if (___m_selectedRecipe.Key.m_item.GetPrefabName(___m_selectedRecipe.Key.m_item.name) != itemNameHelmetDverger)
-                    return false;
-
-                return true;
+                return IsCircletItem(___m_selectedRecipe.Key.m_item);
             }
 
             [HarmonyPriority(Priority.First)]
@@ -370,10 +387,7 @@ namespace CircletExtended
                 if (discover)
                     return false;
 
-                if (piece.m_item?.GetPrefabName(piece.m_item?.name) != itemNameHelmetDverger)
-                    return false;
-
-                return true;
+                return IsCircletItem(piece.m_item);
             }
 
             [HarmonyPriority(Priority.First)]
@@ -420,7 +434,7 @@ namespace CircletExtended
             [HarmonyPriority(Priority.Last)]
             private static void Postfix(ItemDrop.ItemData item, ref string __result)
             {
-                if (item.m_shared.m_name == itemDropNameHelmetDverger && UseFuel())
+                if (IsCircletItem(item) && UseFuel())
                     __result = __result.Replace("$item_durability", "$piece_fire_fuel");
             }
         }
@@ -437,7 +451,7 @@ namespace CircletExtended
                 {
                     for (int i = worn.Count - 1; i >= 0; i--)
                     {
-                        if (worn[i].m_shared.m_name == itemDropNameHelmetDverger && worn[i].m_equipped && (Player.m_localPlayer?.GetCirclet() == worn[i] || Player.m_localPlayer.m_helmetItem == worn[i]))
+                        if (IsCircletItem(worn[i]) && worn[i].m_equipped && (Player.m_localPlayer?.GetCirclet() == worn[i] || Player.m_localPlayer.m_helmetItem == worn[i]))
                         {
                             worn.Add(worn[i]);
                             worn.RemoveAt(i);

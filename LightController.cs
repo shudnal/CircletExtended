@@ -689,7 +689,7 @@ namespace CircletExtended
             {
                 Incinerator incinerator = Resources.FindObjectsOfTypeAll<Incinerator>().FirstOrDefault();
 
-                overloadEffect = InitPrefabClone(incinerator.m_lightingAOEs, overloadItemName);
+                overloadEffect = CustomPrefabs.InitPrefabClone(incinerator.m_lightingAOEs, overloadItemName);
                 for (int i = overloadEffect.transform.childCount - 1; i > 0; i--)
                 {
                     Transform child = overloadEffect.transform.GetChild(i);
@@ -775,7 +775,7 @@ namespace CircletExtended
             if (!visualStateItemDrop.Value)
                 return;
 
-            if (__instance.GetPrefabName(__instance.name) != CircletItem.itemNameHelmetDverger)
+            if (!CircletItem.IsCircletItem(__instance))
                 return;
 
             DvergerLightController component = __instance.GetComponentInChildren<DvergerLightController>();
@@ -801,7 +801,7 @@ namespace CircletExtended
             if (!visualStateItemStand.Value)
                 return;
 
-            if (__instance.GetAttachedItem() != CircletItem.itemNameHelmetDverger)
+            if (!CircletItem.IsCircletItemName(__instance.GetAttachedItem()))
                 return;
 
             if (___m_visualItem != null)
@@ -845,7 +845,7 @@ namespace CircletExtended
             if (!visualStateArmorStand.Value)
                 return;
 
-            if (itemName != CircletItem.itemNameHelmetDverger)
+            if (!CircletItem.IsCircletItemName(itemName))
                 return;
 
             ArmorStand.ArmorStandSlot armorStandSlot = ___m_slots[index];
@@ -870,7 +870,7 @@ namespace CircletExtended
             ___m_visEquipment.UpdateVisuals();
 
             ArmorStand.ArmorStandSlot armorStandSlot = ___m_slots[index];
-            if (armorStandSlot.m_visualName != CircletItem.itemNameHelmetDverger)
+            if (!CircletItem.IsCircletItemName(armorStandSlot.m_visualName))
                 return;
 
             GameObject visualItem = ___m_visEquipment.m_helmetItemInstance;
