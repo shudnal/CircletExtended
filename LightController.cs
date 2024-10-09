@@ -479,17 +479,19 @@ namespace CircletExtended
             if (m_item != null)
             {
                 stateJSON = m_item.m_customData.GetValueSafe(customDataKey);
-                if (String.IsNullOrWhiteSpace(stateJSON))
+                if (string.IsNullOrWhiteSpace(stateJSON))
                 {
-                    m_state = new LightState();
-                    m_state.quality = m_item.m_quality;
+                    m_state = new LightState
+                    {
+                        quality = m_item.m_quality
+                    };
                     SaveState();
                 }
 
                 LogInfo($"Loading state from item: {stateJSON}");
             }
 
-            if (String.IsNullOrWhiteSpace(stateJSON) && m_nview != null && m_nview.IsValid())
+            if (string.IsNullOrWhiteSpace(stateJSON) && m_nview != null && m_nview.IsValid())
             {
                 ZDO zdo = m_nview.GetZDO();
 
@@ -500,7 +502,7 @@ namespace CircletExtended
 
                 LogInfo($"Loading state from item zdo: {stateJSON}");
 
-                if (String.IsNullOrWhiteSpace(stateJSON))
+                if (string.IsNullOrWhiteSpace(stateJSON))
                 {
                     ItemDrop.LoadFromZDO(m_zdoIndex, item, zdo);
                     stateJSON = item.m_customData.GetValueSafe(customDataKey);
@@ -508,14 +510,14 @@ namespace CircletExtended
                     LogInfo($"Loading state from zdo index {m_zdoIndex}: {stateJSON}");
                 }
 
-                if (String.IsNullOrWhiteSpace(stateJSON))
+                if (string.IsNullOrWhiteSpace(stateJSON))
                 {
                     stateJSON = zdo.GetString(s_state);
                     LogInfo($"Loading state from zdo state: {stateJSON}");
                 }
             }
 
-            if (!String.IsNullOrWhiteSpace(stateJSON))
+            if (!string.IsNullOrWhiteSpace(stateJSON))
             {
                 try
                 {
@@ -741,7 +743,7 @@ namespace CircletExtended
             if (component != null)
                 Object.Destroy(component);
 
-            Light[] lights = __result.GetComponentsInChildren<Light>();
+            Light[] lights = __result.GetComponentsInChildren<Light>(includeInactive: true);
             if (lights.Length == 0)
                 return;
 
@@ -749,7 +751,7 @@ namespace CircletExtended
             Player player = null;
             if (__instance.m_isPlayer)
             {
-                player = __instance.GetComponentInParent<Player>();
+                player = __instance.GetComponentInParent<Player>(includeInactive: true);
                 if (player == null)
                     return;
 
@@ -778,11 +780,11 @@ namespace CircletExtended
             if (!CircletItem.IsCircletItem(__instance))
                 return;
 
-            DvergerLightController component = __instance.GetComponentInChildren<DvergerLightController>();
+            DvergerLightController component = __instance.GetComponentInChildren<DvergerLightController>(includeInactive: true);
             if (component != null)
                 Object.Destroy(component);
 
-            Light[] lights = __instance.GetComponentsInChildren<Light>();
+            Light[] lights = __instance.GetComponentsInChildren<Light>(includeInactive: true);
             if (lights.Length == 0)
                 return;
 
@@ -821,11 +823,11 @@ namespace CircletExtended
             if (!__state)
                 return;
 
-            DvergerLightController component = ___m_visualItem.GetComponentInChildren<DvergerLightController>();
+            DvergerLightController component = ___m_visualItem.GetComponentInChildren<DvergerLightController>(includeInactive: true);
             if (component != null)
                 Object.Destroy(component);
 
-            Light[] lights = ___m_visualItem.GetComponentsInChildren<Light>();
+            Light[] lights = ___m_visualItem.GetComponentsInChildren<Light>(includeInactive: true);
             if (lights.Length == 0)
                 return;
 
@@ -877,11 +879,11 @@ namespace CircletExtended
             if (visualItem == null)
                 return;
 
-            DvergerLightController component = visualItem.GetComponentInChildren<DvergerLightController>();
+            DvergerLightController component = visualItem.GetComponentInChildren<DvergerLightController>(includeInactive: true);
             if (component != null)
                 Object.Destroy(component);
 
-            Light[] lights = visualItem.GetComponentsInChildren<Light>();
+            Light[] lights = visualItem.GetComponentsInChildren<Light>(includeInactive: true);
             if (lights.Length == 0)
                 return;
 

@@ -22,6 +22,8 @@ namespace CircletExtended
             return (ItemDrop.ItemData.ItemType)itemSlotType.Value;
         }
 
+        internal static bool IsCircletType(ItemDrop.ItemData item) => item != null && item.m_shared.m_itemType == GetItemType();
+
         internal static bool IsCircletItem(ItemDrop item)
         {
             return item != null && (IsCircletItemName(item.GetPrefabName(item.name)) || IsCircletItem(item.m_itemData));
@@ -29,7 +31,7 @@ namespace CircletExtended
 
         internal static bool IsCircletItem(ItemDrop.ItemData item)
         {
-            return item != null && (IsCircletItemDropName(item.m_shared.m_name) || item.m_dropPrefab != null && IsCircletItemName(item.m_dropPrefab.name));
+            return item != null && (item.m_dropPrefab != null && IsCircletItemName(item.m_dropPrefab.name) || IsCircletItemDropName(item.m_shared.m_name)) && IsCircletType(item);
         }
 
         internal static bool IsCircletItemDropName(string name)
@@ -460,6 +462,14 @@ namespace CircletExtended
                 }
             }
         }
-        
+
+        [HarmonyPatch(typeof(Inventory), nameof(Inventory.Changed))]
+        public static class Inventory_Changed_PatchCirclets
+        {
+            private static void Prefix(Inventory __instance)
+            {
+                PatchInventory(__instance);
+            }
+        }
     }
 }

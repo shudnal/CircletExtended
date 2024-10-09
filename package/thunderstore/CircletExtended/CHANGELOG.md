@@ -1,3 +1,6 @@
+# 1.0.11
+* stands and equipment control refinements
+
 # 1.0.10
 * AzuEPI custom slot support
 

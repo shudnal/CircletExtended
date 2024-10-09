@@ -175,194 +175,173 @@ namespace CircletExtended
         }
     }
 
-    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.EquipItem))]
-    public static class Humanoid_EquipItem_CircletOnTop
+    internal static class CustomItemType
     {
-        private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, ref bool __result, bool triggerEquipEffects)
+        [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.EquipItem))]
+        public static class Humanoid_EquipItem_CircletOnTop
         {
-            if (!modEnabled.Value)
-                return;
-
-            if (!enablePutOnTop.Value)
-                return;
-
-            if (CircletItem.IsCircletItem(__instance.m_helmetItem))
+            private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, ref bool __result, bool triggerEquipEffects)
             {
-                LogInfo("Unequipping circlet on circlet equipment");
+                if (!modEnabled.Value)
+                    return;
+
+                if (!enablePutOnTop.Value)
+                    return;
+
+                if (CircletItem.IsCircletItem(__instance.m_helmetItem))
+                {
+                    LogInfo("Unequipping circlet on circlet equipment");
+                    __instance.UnequipItem(__instance.GetCirclet(), triggerEquipEffects);
+                    return;
+                }
+
+                if (!CircletItem.IsCircletItem(item))
+                    return;
+
+                bool wasCirclet = __instance.GetCirclet() != null;
+
                 __instance.UnequipItem(__instance.GetCirclet(), triggerEquipEffects);
-                return;
+
+                if (wasCirclet)
+                    __instance.m_visEquipment.UpdateEquipmentVisuals();
+
+                __instance.SetCirclet(item);
+
+                if (__instance.IsItemEquiped(item))
+                {
+                    item.m_equipped = true;
+                    __result = true;
+                }
+
+                __instance.SetupEquipment();
+
+                if (triggerEquipEffects)
+                    __instance.TriggerEquipEffect(item);
             }
+        }
 
-            if (item.m_shared.m_itemType != CircletItem.GetItemType())
-                return;
-
-            bool wasCirclet = __instance.GetCirclet() != null;
-
-            __instance.UnequipItem(__instance.GetCirclet(), triggerEquipEffects);
-
-            if (wasCirclet)
-                __instance.m_visEquipment.UpdateEquipmentVisuals();
-
-            __instance.SetCirclet(item);
-            
-            if (__instance.IsItemEquiped(item))
+        [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UnequipItem))]
+        public static class Humanoid_UnequipItem_CircletOnTop
+        {
+            private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, bool triggerEquipEffects)
             {
-                item.m_equipped = true;
-                __result = true;
+                if (!modEnabled.Value)
+                    return;
+
+                if (!enablePutOnTop.Value)
+                    return;
+
+                if (!CircletItem.IsCircletItem(item))
+                    return;
+
+                if (__instance.GetCirclet() == item)
+                {
+                    __instance.SetCirclet(null);
+                    __instance.SetupEquipment();
+                }
             }
-
-            __instance.SetupEquipment();
-
-            if (triggerEquipEffects)
-                __instance.TriggerEquipEffect(item);
         }
-    }
 
-    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UnequipItem))]
-    public static class Humanoid_UnequipItem_CircletOnTop
-    {
-        private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, bool triggerEquipEffects)
+        [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UnequipAllItems))]
+        public class Humanoid_UnequipAllItems_CircletOnTop
         {
-            if (!modEnabled.Value)
-                return;
+            public static void Postfix(Humanoid __instance)
+            {
+                if (!modEnabled.Value)
+                    return;
 
-            if (!enablePutOnTop.Value)
-                return;
+                if (!enablePutOnTop.Value)
+                    return;
 
-            if (item == null)
-                return;
-
-            if (__instance.GetCirclet() != item)
-                return;
-
-            __instance.SetCirclet(null);
-
-            __instance.SetupEquipment();
-
-            if (triggerEquipEffects)
-                __instance.TriggerEquipEffect(item);
+                __instance.UnequipItem(__instance.GetCirclet(), triggerEquipEffects: false);
+            }
         }
-    }
 
-    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UnequipAllItems))]
-    public class Humanoid_UnequipAllItems_CircletOnTop
-    {
-        public static void Postfix(Humanoid __instance)
+        [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.IsItemEquiped))]
+        public static class Humanoid_IsItemEquiped_CircletOnTop
         {
-            if (!modEnabled.Value)
-                return;
+            private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, ref bool __result)
+            {
+                if (!modEnabled.Value)
+                    return;
 
-            if (!enablePutOnTop.Value)
-                return;
+                if (!enablePutOnTop.Value)
+                    return;
 
-            __instance.UnequipItem(__instance.GetCirclet(), triggerEquipEffects: false); 
+                if (!CircletItem.IsCircletItem(item))
+                    return;
+
+                __result = __result || __instance.GetCirclet() == item;
+            }
         }
-    }
 
-    [HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveItem), new Type[] { typeof(ItemDrop.ItemData) })]
-    public static class Inventory_RemoveItem_CustomItemType
-    {
-        private static void Postfix(Inventory __instance, ItemDrop.ItemData item)
+        [HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.IsEquipable))]
+        public static class ItemDropItemData_IsEquipable_CircletOnTop
         {
-            if (__instance != Player.m_localPlayer?.GetInventory())
-                return;
+            private static void Postfix(ItemDrop.ItemData __instance, ref bool __result)
+            {
+                if (!modEnabled.Value)
+                    return;
 
-            if (item == null || item != Player.m_localPlayer.GetCirclet())
-                return;
+                if (!enablePutOnTop.Value)
+                    return;
 
-            Player.m_localPlayer.SetCirclet(null);
-
-            Player.m_localPlayer.SetupEquipment();
+                __result = __result || CircletItem.IsCircletType(__instance);
+            }
         }
-    }
 
-    [HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveItem), new Type[] { typeof(string), typeof(int), typeof(int), typeof(bool) })]
-    public static class Inventory_RemoveItem_ByName_CustomItemType
-    {
-        private static void Postfix(Inventory __instance, string name)
+        [HarmonyPatch(typeof(Inventory), nameof(Inventory.Changed))]
+        public static class Inventory_Changed_CustomItemType
         {
-            if (__instance != Player.m_localPlayer?.GetInventory())
-                return;
+            private static void Prefix(Inventory __instance)
+            {
+                if (__instance != Player.m_localPlayer?.GetInventory())
+                    return;
 
-            if (!CircletItem.IsCircletItemDropName(name))
-                return;
-
-            if (Player.m_localPlayer.GetCirclet() != null && __instance.ContainsItem(Player.m_localPlayer.GetCirclet()))
-                return;
-
-            Player.m_localPlayer.SetCirclet(null);
-
-            Player.m_localPlayer.SetupEquipment();
+                if (Player.m_localPlayer.GetCirclet() != null && !__instance.ContainsItem(Player.m_localPlayer.GetCirclet()))
+                {
+                    Player.m_localPlayer.SetCirclet(null);
+                    Player.m_localPlayer.SetupEquipment();
+                }
+            }
         }
-    }
 
-    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.IsItemEquiped))]
-    public static class Humanoid_IsItemEquiped_CircletOnTop
-    {
-        private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, ref bool __result)
+        [HarmonyPatch(typeof(ItemStand), nameof(ItemStand.Awake))]
+        public static class ItemStand_Awake_CircletOnTop
         {
-            if (!modEnabled.Value)
-                return;
+            private static void Postfix(ItemStand __instance)
+            {
+                if (!modEnabled.Value)
+                    return;
 
-            if (!enablePutOnTop.Value)
-                return;
+                if (!enablePutOnTop.Value)
+                    return;
 
-            if (item == null)
-                return;
+                if (!visualStateItemStand.Value)
+                    return;
 
-            __result = __result || __instance.GetCirclet() == item;
+                if (__instance.m_supportedTypes.Contains(ItemDrop.ItemData.ItemType.Helmet) && !__instance.m_supportedTypes.Contains(CircletItem.GetItemType()))
+                    __instance.m_supportedTypes.Add(CircletItem.GetItemType());
+            }
         }
-    }
 
-    [HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.IsEquipable))]
-    public static class ItemDropItemData_IsEquipable_CircletOnTop
-    {
-        private static void Postfix(ItemDrop.ItemData __instance, ref bool __result)
+        [HarmonyPatch(typeof(ArmorStand), nameof(ArmorStand.Awake))]
+        public static class ArmorStand_Awake_CircletOnTop
         {
-            if (!modEnabled.Value)
-                return;
+            private static void Postfix(ArmorStand __instance)
+            {
+                if (!modEnabled.Value)
+                    return;
 
-            if (!enablePutOnTop.Value)
-                return;
+                if (!enablePutOnTop.Value)
+                    return;
 
-            __result = __result || __instance.m_shared.m_itemType == CircletItem.GetItemType();
+                if (!visualStateArmorStand.Value)
+                    return;
+
+                __instance.m_slots.Where(x => x.m_slot == VisSlot.Helmet && x.m_supportedTypes.Contains(ItemDrop.ItemData.ItemType.Helmet) && !x.m_supportedTypes.Contains(CircletItem.GetItemType()))
+                                  .Do(x => x.m_supportedTypes.Add(CircletItem.GetItemType()));
+            }
         }
     }
-
-    [HarmonyPatch(typeof(ItemStand), nameof(ItemStand.Awake))]
-    public static class ItemStand_Awake_CircletOnTop
-    {
-        private static void Postfix(ItemStand __instance)
-        {
-            if (!modEnabled.Value)
-                return;
-
-            if (!enablePutOnTop.Value)
-                return;
-
-            if (!visualStateItemStand.Value)
-                return;
-
-            __instance.m_supportedTypes.Add(CircletItem.GetItemType());
-        }
-    }
-
-    [HarmonyPatch(typeof(ArmorStand), nameof(ArmorStand.Awake))]
-    public static class ArmorStand_Awake_CircletOnTop
-    {
-        private static void Postfix(ArmorStand __instance)
-        {
-            if (!modEnabled.Value)
-                return;
-
-            if (!enablePutOnTop.Value)
-                return;
-
-            if (!visualStateArmorStand.Value)
-                return;
-
-            __instance.m_slots.Where(x => x.m_slot == VisSlot.Helmet).Do(x => x.m_supportedTypes.Add(CircletItem.GetItemType()));
-        }
-    }
-
 }
