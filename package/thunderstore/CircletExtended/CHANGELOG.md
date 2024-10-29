@@ -1,3 +1,6 @@
+# 1.0.12
+* bog witch patch
+
 # 1.0.11
 * stands and equipment control refinements
 
