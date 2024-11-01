@@ -13,6 +13,7 @@ namespace CircletExtended
     [BepInIncompatibility("randyknapp.mods.dvergercolor")]
     [BepInIncompatibility("Azumatt.CircletDemister")]
     [BepInDependency("Azumatt.AzuExtendedPlayerInventory", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("shudnal.ExtraSlots", BepInDependency.DependencyFlags.SoftDependency)]
     public class CircletExtended : BaseUnityPlugin
     {
         const string pluginID = "shudnal.CircletExtended";
@@ -34,6 +35,9 @@ namespace CircletExtended
         public static ConfigEntry<bool> itemSlotAzuEPI;
         public static ConfigEntry<string> itemSlotNameAzuEPI;
         public static ConfigEntry<int> itemSlotIndexAzuEPI;
+        public static ConfigEntry<bool> itemSlotExtraSlots;
+        public static ConfigEntry<string> itemSlotNameExtraSlots;
+        public static ConfigEntry<int> itemSlotIndexExtraSlots;
 
         public static ConfigEntry<bool> getFeaturesByUpgrade;
         public static ConfigEntry<int> overloadChargesPerLevel;
@@ -139,6 +143,12 @@ namespace CircletExtended
 
             if (itemSlotAzuEPI.Value && AzuExtendedPlayerInventory.API.IsLoaded())
                 AzuExtendedPlayerInventory.API.AddSlot(itemSlotNameAzuEPI.Value, player => player.GetCirclet(), item => CircletItem.IsCircletItem(item), itemSlotIndexAzuEPI.Value);
+
+            if (ExtraSlots.API.IsLoaded())
+                if (itemSlotIndexExtraSlots.Value < 0)
+                    ExtraSlots.API.AddSlotBefore("CircletExtended", () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => itemSlotExtraSlots.Value, "HipLantern");
+                else
+                    ExtraSlots.API.AddSlotWithIndex("CircletExtended", itemSlotIndexExtraSlots.Value, () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => itemSlotExtraSlots.Value);
         }
 
         private void OnDestroy()
@@ -213,8 +223,12 @@ namespace CircletExtended
             itemSlotAzuEPI = config("Circlet - Custom slot", "AzuEPI - Create slot", defaultValue: false, "Create custom equipment slot with AzuExtendedPlayerInventory. Game restart is required to apply changes.");
             itemSlotNameAzuEPI = config("Circlet - Custom slot", "AzuEPI - Slot name", defaultValue: "Circlet", "Custom equipment slot name. Game restart is required to apply changes.");
             itemSlotIndexAzuEPI = config("Circlet - Custom slot", "AzuEPI - Slot index", defaultValue: -1, "Slot index (position). Game restart is required to apply changes.");
+            itemSlotExtraSlots = config("Circlet - Custom slot", "ExtraSlots - Create slot", defaultValue: false, "Create custom equipment slot with ExtraSlots.");
+            itemSlotNameExtraSlots = config("Circlet - Custom slot", "ExtraSlots - Slot name", defaultValue: "Circlet", "Custom equipment slot name.");
+            itemSlotIndexExtraSlots = config("Circlet - Custom slot", "ExtraSlots - Slot index", defaultValue: -1, "Slot index (position). Game restart is required to apply changes.");
 
             itemSlotType.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
+            itemSlotExtraSlots.SettingChanged += (s, e) => ExtraSlots.API.UpdateSlots();
 
             widenShortcut = config("Hotkeys", "Beam widen", defaultValue: new KeyboardShortcut(KeyCode.RightArrow), "Widen beam shortcut. [Not Synced with Server]", false);
             narrowShortcut = config("Hotkeys", "Beam narrow", defaultValue: new KeyboardShortcut(KeyCode.LeftArrow), "Narrow beam shortcut. [Not Synced with Server]", false);
