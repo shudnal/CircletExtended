@@ -26,12 +26,17 @@ namespace CircletExtended
 
         internal static bool IsCircletItem(ItemDrop item)
         {
-            return item != null && (IsCircletItemName(item.GetPrefabName(item.name)) || IsCircletItem(item.m_itemData));
+            return item != null && (IsCircletItemName(item.GetPrefabName(item.name)) || IsCircletItemData(item.m_itemData));
+        }
+
+        internal static bool IsCircletItemData(ItemDrop.ItemData item)
+        {
+            return item != null && (item.m_dropPrefab != null && IsCircletItemName(item.m_dropPrefab.name) || IsCircletItemDropName(item.m_shared.m_name));
         }
 
         internal static bool IsCircletItem(ItemDrop.ItemData item)
         {
-            return item != null && (item.m_dropPrefab != null && IsCircletItemName(item.m_dropPrefab.name) || IsCircletItemDropName(item.m_shared.m_name)) && IsCircletType(item);
+            return IsCircletItemData(item) && IsCircletType(item);
         }
 
         internal static bool IsCircletItemDropName(string name)
@@ -214,7 +219,7 @@ namespace CircletExtended
                 if (!getFeaturesByUpgrade.Value)
                     return;
 
-                if (!IsCircletItem(item))
+                if (!IsCircletItemData(item))
                     return;
 
                 PatchCircletItemData(item);
@@ -299,7 +304,7 @@ namespace CircletExtended
                 if (___m_craftRecipe == null || ___m_craftUpgradeItem == null)
                     return false;
 
-                if (!IsCircletItem(___m_craftUpgradeItem))
+                if (!IsCircletItemData(___m_craftUpgradeItem))
                     return false;
 
                 return true;
@@ -436,7 +441,7 @@ namespace CircletExtended
             [HarmonyPriority(Priority.Last)]
             private static void Postfix(ItemDrop.ItemData item, ref string __result)
             {
-                if (IsCircletItem(item) && UseFuel())
+                if (IsCircletItemData(item) && UseFuel())
                     __result = __result.Replace("$item_durability", "$piece_fire_fuel");
             }
         }
@@ -453,7 +458,7 @@ namespace CircletExtended
                 {
                     for (int i = worn.Count - 1; i >= 0; i--)
                     {
-                        if (IsCircletItem(worn[i]) && worn[i].m_equipped && (Player.m_localPlayer?.GetCirclet() == worn[i] || Player.m_localPlayer.m_helmetItem == worn[i]))
+                        if (IsCircletItemData(worn[i]) && worn[i].m_equipped && (Player.m_localPlayer?.GetCirclet() == worn[i] || Player.m_localPlayer.m_helmetItem == worn[i]))
                         {
                             worn.Add(worn[i]);
                             worn.RemoveAt(i);
@@ -469,6 +474,26 @@ namespace CircletExtended
             private static void Prefix(Inventory __instance)
             {
                 PatchInventory(__instance);
+            }
+        }
+
+        [HarmonyPatch(typeof(Inventory), nameof(Inventory.AddItem), typeof(ItemDrop.ItemData), typeof(int), typeof(int), typeof(int))]
+        private static class Inventory_AddItem_ItemData_amount_x_y_PatchCircletItemDataOnLoad
+        {
+            [HarmonyPriority(Priority.First)]
+            [HarmonyBefore("shudnal.ExtraSlots")]
+            private static void Prefix(ItemDrop.ItemData item)
+            {
+                if (!modEnabled.Value)
+                    return;
+
+                if (!getFeaturesByUpgrade.Value)
+                    return;
+
+                if (!IsCircletItemData(item))
+                    return;
+
+                PatchCircletItemData(item);
             }
         }
     }
