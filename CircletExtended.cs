@@ -38,6 +38,7 @@ namespace CircletExtended
         public static ConfigEntry<bool> itemSlotExtraSlots;
         public static ConfigEntry<string> itemSlotNameExtraSlots;
         public static ConfigEntry<int> itemSlotIndexExtraSlots;
+        public static ConfigEntry<bool> itemSlotExtraSlotsDiscovery;
 
         public static ConfigEntry<bool> getFeaturesByUpgrade;
         public static ConfigEntry<int> overloadChargesPerLevel;
@@ -146,9 +147,9 @@ namespace CircletExtended
 
             if (ExtraSlots.API.IsLoaded())
                 if (itemSlotIndexExtraSlots.Value < 0)
-                    ExtraSlots.API.AddSlotBefore("CircletExtended", () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => itemSlotExtraSlots.Value, "HipLantern");
+                    ExtraSlots.API.AddSlotBefore("CircletExtended", () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => CircletItem.IsCircletSlotAvailable(), "HipLantern");
                 else
-                    ExtraSlots.API.AddSlotWithIndex("CircletExtended", itemSlotIndexExtraSlots.Value, () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => itemSlotExtraSlots.Value);
+                    ExtraSlots.API.AddSlotWithIndex("CircletExtended", itemSlotIndexExtraSlots.Value, () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => CircletItem.IsCircletSlotAvailable());
         }
 
         private void OnDestroy()
@@ -226,6 +227,7 @@ namespace CircletExtended
             itemSlotExtraSlots = config("Circlet - Custom slot", "ExtraSlots - Create slot", defaultValue: false, "Create custom equipment slot with ExtraSlots.");
             itemSlotNameExtraSlots = config("Circlet - Custom slot", "ExtraSlots - Slot name", defaultValue: "Circlet", "Custom equipment slot name.");
             itemSlotIndexExtraSlots = config("Circlet - Custom slot", "ExtraSlots - Slot index", defaultValue: -1, "Slot index (position). Game restart is required to apply changes.");
+            itemSlotExtraSlotsDiscovery = config("Circlet - Custom slot", "ExtraSlots - Available after discovery", defaultValue: true, "If enabled - slot will be active only if you know circlet item.");
 
             itemSlotType.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
             itemSlotExtraSlots.SettingChanged += (s, e) => ExtraSlots.API.UpdateSlots();

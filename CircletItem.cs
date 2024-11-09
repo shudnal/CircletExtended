@@ -49,6 +49,16 @@ namespace CircletExtended
             return name == itemNameHelmetDverger;
         }
 
+        internal static bool IsCircletKnown()
+        {
+            if (!Player.m_localPlayer || Player.m_localPlayer.m_isLoading)
+                return true;
+
+            return Player.m_localPlayer.IsKnownMaterial(itemDropNameHelmetDverger);
+        }
+
+        internal static bool IsCircletSlotAvailable() => itemSlotExtraSlots.Value && (!itemSlotExtraSlotsDiscovery.Value || IsCircletKnown());
+
         internal static void PatchCircletItemData(ItemDrop.ItemData item, bool inventoryItemUpdate = true)
         {
             if (!modEnabled.Value)
