@@ -18,7 +18,7 @@ namespace CircletExtended
     {
         const string pluginID = "shudnal.CircletExtended";
         const string pluginName = "Circlet Extended";
-        const string pluginVersion = "1.0.12";
+        const string pluginVersion = "1.0.13";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 

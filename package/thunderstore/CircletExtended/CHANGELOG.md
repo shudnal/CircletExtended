@@ -1,3 +1,7 @@
+# 1.0.13
+* ExtraSlots custom slot compatibility
+* minor refinements
+
 # 1.0.12
 * bog witch patch
 
