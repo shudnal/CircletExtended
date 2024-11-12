@@ -6,6 +6,7 @@ using HarmonyLib;
 using UnityEngine;
 using ServerSync;
 using System;
+using BepInEx.Bootstrap;
 
 namespace CircletExtended
 {
@@ -18,7 +19,7 @@ namespace CircletExtended
     {
         const string pluginID = "shudnal.CircletExtended";
         const string pluginName = "Circlet Extended";
-        const string pluginVersion = "1.0.13";
+        const string pluginVersion = "1.0.14";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -145,7 +146,7 @@ namespace CircletExtended
             if (itemSlotAzuEPI.Value && AzuExtendedPlayerInventory.API.IsLoaded())
                 AzuExtendedPlayerInventory.API.AddSlot(itemSlotNameAzuEPI.Value, player => player.GetCirclet(), item => CircletItem.IsCircletItem(item), itemSlotIndexAzuEPI.Value);
 
-            if (ExtraSlots.API.IsLoaded())
+            if (Chainloader.PluginInfos.ContainsKey("shudnal.ExtraSlots"))
                 if (itemSlotIndexExtraSlots.Value < 0)
                     ExtraSlots.API.AddSlotBefore("CircletExtended", () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => CircletItem.IsCircletSlotAvailable(), "HipLantern");
                 else

@@ -1,3 +1,6 @@
+# 1.0.14
+* ExtraSlots API removed
+
 # 1.0.13
 * ExtraSlots custom slot compatibility
 * minor refinements
