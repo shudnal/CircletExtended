@@ -6,7 +6,6 @@ using HarmonyLib;
 using UnityEngine;
 using ServerSync;
 using System;
-using BepInEx.Bootstrap;
 
 namespace CircletExtended
 {
@@ -19,7 +18,7 @@ namespace CircletExtended
     {
         const string pluginID = "shudnal.CircletExtended";
         const string pluginName = "Circlet Extended";
-        const string pluginVersion = "1.0.14";
+        const string pluginVersion = "1.0.15";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -146,11 +145,11 @@ namespace CircletExtended
             if (itemSlotAzuEPI.Value && AzuExtendedPlayerInventory.API.IsLoaded())
                 AzuExtendedPlayerInventory.API.AddSlot(itemSlotNameAzuEPI.Value, player => player.GetCirclet(), item => CircletItem.IsCircletItem(item), itemSlotIndexAzuEPI.Value);
 
-            if (Chainloader.PluginInfos.ContainsKey("shudnal.ExtraSlots"))
+            if (ExtraSlotsAPI.API.IsReady())
                 if (itemSlotIndexExtraSlots.Value < 0)
-                    ExtraSlots.API.AddSlotBefore("CircletExtended", () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => CircletItem.IsCircletSlotAvailable(), "HipLantern");
+                    ExtraSlotsAPI.API.AddSlotBefore("CircletExtended", () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => CircletItem.IsCircletSlotAvailable(), "HipLantern");
                 else
-                    ExtraSlots.API.AddSlotWithIndex("CircletExtended", itemSlotIndexExtraSlots.Value, () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => CircletItem.IsCircletSlotAvailable());
+                    ExtraSlotsAPI.API.AddSlotWithIndex("CircletExtended", itemSlotIndexExtraSlots.Value, () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => CircletItem.IsCircletSlotAvailable());
         }
 
         private void OnDestroy()
@@ -231,7 +230,7 @@ namespace CircletExtended
             itemSlotExtraSlotsDiscovery = config("Circlet - Custom slot", "ExtraSlots - Available after discovery", defaultValue: true, "If enabled - slot will be active only if you know circlet item.");
 
             itemSlotType.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
-            itemSlotExtraSlots.SettingChanged += (s, e) => ExtraSlots.API.UpdateSlots();
+            itemSlotExtraSlots.SettingChanged += (s, e) => ExtraSlotsAPI.API.UpdateSlots();
 
             widenShortcut = config("Hotkeys", "Beam widen", defaultValue: new KeyboardShortcut(KeyCode.RightArrow), "Widen beam shortcut. [Not Synced with Server]", false);
             narrowShortcut = config("Hotkeys", "Beam narrow", defaultValue: new KeyboardShortcut(KeyCode.LeftArrow), "Narrow beam shortcut. [Not Synced with Server]", false);

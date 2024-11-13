@@ -1,3 +1,6 @@
+# 1.0.15
+* ExtraSlots API rework
+
 # 1.0.14
 * ExtraSlots API removed
 
