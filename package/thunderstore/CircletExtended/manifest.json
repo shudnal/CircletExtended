@@ -1,6 +1,6 @@
 {
   "name": "CircletExtended",
-  "version_number": "1.0.16",
+  "version_number": "1.0.17",
   "website_url": "https://github.com/shudnal/CircletExtended",
   "description": "Customize circlet light. Every circlet preserve its own state. Upgrade circlet to have new features: putting on top, overload and demister.",
   "dependencies": ["denikson-BepInExPack_Valheim-5.4.2202"]

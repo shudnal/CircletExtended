@@ -1,3 +1,6 @@
+# 1.0.17
+* ExtraSlotsCustomSlots support
+
 # 1.0.16
 * fix for MMHOOK dependent mods generating warnings on ExtraSlots API initialization
 
