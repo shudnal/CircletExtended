@@ -440,7 +440,7 @@ namespace CircletExtended
                 if (!modEnabled.Value)
                     return;
 
-                if (__instance.IsPlayer() && UseFuel() && __instance.GetCirclet() != null && __instance.GetCirclet().IsCircletLightEnabled())
+                if (__instance.IsPlayer() && UseFuel() && __instance.GetCirclet() != null && __instance.GetCirclet().IsCircletLightEnabled() && (__instance as Player).GetCurrentCraftingStation() == null)
                     __instance.DrainEquipedItemDurability(__instance.GetCirclet(), dt);
             }
         }
