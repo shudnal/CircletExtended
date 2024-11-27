@@ -7,6 +7,16 @@ If you want another light sources you can also check [Firefly](https://thunderst
 
 To make nights darker you can use [GammaOfNightLights](https://thunderstore.io/c/valheim/p/shudnal/GammaOfNightLights/) mod.
 
+## Summary
+
+You will be able to control circlet light in various ways. Every circlet light could be configured individually.
+
+Circlet lvl 1 will work as a regular helmet with custom light. Circlet lvl 2+ will be equippable along with helmet.
+
+Circlet lvl 3 will be able to stun enemies with overloaded light and temporarily cast away the mists.
+
+Circlet lvl 4 comes with build in toggleable demister.
+
 ## Features
 * change the light color
 * change beam width
@@ -26,7 +36,7 @@ Each circlet can be configured individually. Circlet state is synced between cli
 
 ## Extra features
 Circlet could be crafted in forge
-* Create - HelmetBronze x1, Ruby x1, Silver Necklace x1, Surtling Core x10
+* To create - HelmetBronze x1, Ruby x1, Silver Necklace x1, Surtling Core x10
 
 Circlet can not be crafted if you disabled getting features by quality upgrade as it disables the recipe completely.
 
@@ -35,7 +45,7 @@ Upgrade the circlet at the forge to get new features bound to quality level.
 * Level 3 - Thunder stone x5, Silver x1, Red jute x2
 * Level 4 - Wisplight, Black core
 
-Recipes are balanced to get different features depending on overall progress. 
+Recipes are balanced to get different features depending on overall progress.
 
 Default circlet have only configurable light. It easily can be used as configurable light source when it placed on a stand.
 
@@ -87,3 +97,6 @@ Or [Official BepInEx Configuration Manager](https://valheim.thunderstore.io/pack
 
 ## Mirrors
 [Nexus](https://www.nexusmods.com/valheim/mods/2617)
+
+## Donation
+[Buy Me a Coffee](https://buymeacoffee.com/shudnal)

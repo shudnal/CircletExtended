@@ -5,6 +5,16 @@ Customize circlet light. Every circlet preserve its own state. Upgrade circlet t
 
 If you like darker nights you can also check [Firefly](https://thunderstore.io/c/valheim/p/shudnal/Firefly/) mod.
 
+## Summary
+
+You will be able to control circlet light in various ways. Every circlet light could be configured individually.
+
+Circlet lvl 1 will work as a regular helmet with custom light. Circlet lvl 2+ will be equippable along with helmet.
+
+Circlet lvl 3 will be able to stun enemies with overloaded light and temporarily cast away the mists.
+
+Circlet lvl 4 comes with build in toggleable demister.
+
 ## Features
 * change the light color
 * change beam width
