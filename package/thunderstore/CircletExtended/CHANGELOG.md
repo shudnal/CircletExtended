@@ -1,3 +1,6 @@
+# 1.0.19
+* mod description updated to make more clear lvl1 Circlet works as helmet
+
 # 1.0.18
 * Circlet no longer drain fuel if crafting station is opened
 

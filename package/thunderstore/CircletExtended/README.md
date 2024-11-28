@@ -11,7 +11,9 @@ To make nights darker you can use [GammaOfNightLights](https://thunderstore.io/c
 
 You will be able to control circlet light in various ways. Every circlet light could be configured individually.
 
-Circlet lvl 1 will work as a regular helmet with custom light. Circlet lvl 2+ will be equippable along with helmet.
+Circlet lvl 1 will work as a regular helmet with custom light.
+
+Circlet lvl 2+ will be equippable along with helmet.
 
 Circlet lvl 3 will be able to stun enemies with overloaded light and temporarily cast away the mists.
 
