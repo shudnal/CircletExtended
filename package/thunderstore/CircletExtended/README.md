@@ -11,7 +11,7 @@ To make nights darker you can use [GammaOfNightLights](https://thunderstore.io/c
 
 You will be able to control circlet light in various ways. Every circlet light could be configured individually.
 
-Circlet lvl 1 will work as a regular helmet with custom light.
+Circlet lvl 1 works as regular helmet with custom light.
 
 Circlet lvl 2+ will be equippable along with helmet.
 
@@ -71,7 +71,7 @@ The flash only affects enemies if their head is in the light cone. Also all the 
 
 Blinded enemy will be staggered so you will have a chance to get a critical blow.
 
-After each overload the circlet durability will be damaged a little. Overloaded circlet will take some time to restore its power.
+After each overload the circlet durability will be damaged. Overloaded circlet will take some time to restore its power.
 
 Overload pushes away the Mistlands mists gradually decreasing for set amount of time.
 

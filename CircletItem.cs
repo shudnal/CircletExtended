@@ -7,10 +7,11 @@ using static CircletExtended.CircletExtended;
 
 namespace CircletExtended
 {
-    internal static class CircletItem
+    public static class CircletItem
     {
         public const string itemNameHelmetDverger = "HelmetDverger";
         public const string itemDropNameHelmetDverger = "$item_helmet_dverger";
+        public const string itemDropNameHelmetDvergerLvl2 = "$item_helmet_dverger_quality_lvl_2";
         public static int itemHashHelmetDverger = itemNameHelmetDverger.GetStableHashCode();
 
         public static GameObject circletPrefab;
@@ -49,21 +50,18 @@ namespace CircletExtended
             return name == itemNameHelmetDverger;
         }
 
-        internal static bool IsCircletKnown()
+        public static bool IsCircletSlotKnown()
         {
             if (!Player.m_localPlayer || Player.m_localPlayer.m_isLoading)
                 return true;
 
-            return Player.m_localPlayer.IsKnownMaterial(itemDropNameHelmetDverger);
+            return Player.m_localPlayer.IsKnownMaterial(itemDropNameHelmetDverger) && Player.m_localPlayer.IsKnownMaterial(itemDropNameHelmetDvergerLvl2);
         }
 
-        internal static bool IsCircletSlotAvailable() => itemSlotExtraSlots.Value && (!itemSlotExtraSlotsDiscovery.Value || IsCircletKnown());
+        public static bool IsCircletSlotAvailable() => itemSlotExtraSlots.Value && (!itemSlotExtraSlotsDiscovery.Value || IsCircletSlotKnown());
 
         internal static void PatchCircletItemData(ItemDrop.ItemData item, bool inventoryItemUpdate = true)
         {
-            if (!modEnabled.Value)
-                return;
-
             if (item == null)
                 return;
 
@@ -209,9 +207,6 @@ namespace CircletExtended
             [HarmonyPriority(Priority.Last)]
             private static void Postfix()
             {
-                if (!modEnabled.Value)
-                    return;
-
                 DvergerLightController.RegisterEffects();
 
                 FillRecipe();
@@ -219,20 +214,17 @@ namespace CircletExtended
         }
 
         [HarmonyPatch(typeof(Player), nameof(Player.AddKnownItem))]
-        public static class Player_AddKnownItem_CircletStats
+        public static class Player_AddKnownItem_CircletRecipeAvailableAfterAcquiring
         {
-            private static void Postfix(ref ItemDrop.ItemData item)
+            private static void Prefix(Player __instance, ItemDrop.ItemData item, ref bool __state) => __state = !__instance.IsKnownMaterial(itemDropNameHelmetDverger) && IsCircletItemData(item);
+
+            private static void Postfix(Player __instance, ItemDrop.ItemData item, bool __state)
             {
-                if (!modEnabled.Value)
-                    return;
+                if (__state && ObjectDB.instance.m_recipes.FirstOrDefault(x => IsCircletItemName(x.name)) is Recipe recipe)
+                    __instance.AddKnownRecipe(recipe);
 
-                if (!getFeaturesByUpgrade.Value)
-                    return;
-
-                if (!IsCircletItemData(item))
-                    return;
-
-                PatchCircletItemData(item);
+                if (enablePutOnTop.Value && IsCircletItemData(item) && (item.m_quality > 1 || !getFeaturesByUpgrade.Value) && __instance.IsKnownMaterial(itemDropNameHelmetDverger) && !__instance.IsKnownMaterial(itemDropNameHelmetDvergerLvl2))
+                    __instance.m_knownMaterial.Add(itemDropNameHelmetDvergerLvl2);
             }
         }
 
@@ -241,9 +233,6 @@ namespace CircletExtended
         {
             public static void Postfix(Player __instance)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (!getFeaturesByUpgrade.Value)
                     return;
 
@@ -259,9 +248,6 @@ namespace CircletExtended
         {
             public static void Postfix(Inventory __instance)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 PatchInventory(__instance);
             }
         }
@@ -271,9 +257,6 @@ namespace CircletExtended
         {
             private static void Postfix(ItemDrop __instance)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (!getFeaturesByUpgrade.Value)
                     return;
 
@@ -289,9 +272,6 @@ namespace CircletExtended
         {
             public static void Postfix(Piece.Requirement __instance, int qualityLevel, ref int __result)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (!getFeaturesByUpgrade.Value)
                     return;
 
@@ -305,9 +285,6 @@ namespace CircletExtended
         {
             private static bool PatchMethod(ItemDrop.ItemData ___m_craftUpgradeItem, Recipe ___m_craftRecipe)
             {
-                if (!modEnabled.Value)
-                    return false;
-
                 if (!getFeaturesByUpgrade.Value)
                     return false;
 
@@ -356,9 +333,6 @@ namespace CircletExtended
         {
             private static bool PatchMethod(KeyValuePair<Recipe, ItemDrop.ItemData> ___m_selectedRecipe)
             {
-                if (!modEnabled.Value)
-                    return false;
-
                 if (!getFeaturesByUpgrade.Value)
                     return false;
 
@@ -395,9 +369,6 @@ namespace CircletExtended
         {
             private static bool PatchMethod(bool discover, Recipe piece)
             {
-                if (!modEnabled.Value)
-                    return false;
-
                 if (!getFeaturesByUpgrade.Value)
                     return false;
 
@@ -437,11 +408,32 @@ namespace CircletExtended
         {
             public static void Postfix(Humanoid __instance, float dt)
             {
-                if (!modEnabled.Value)
+                if (__instance.IsPlayer() && __instance.GetCirclet() is ItemDrop.ItemData circlet && circlet != __instance.m_helmetItem)
+                    __instance.DrainEquipedItemDurability(circlet, dt);
+            }
+        }
+
+        [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.DrainEquipedItemDurability))]
+        public class Humanoid_DrainEquipedItemDurability_CircletEquipmentDrain
+        {
+            public static bool DrainCirclet(Player player, ItemDrop.ItemData item) => IsCircletItemData(item) && UseFuel() && item.IsCircletLightEnabled() && player.GetCurrentCraftingStation() == null;
+            
+            [HarmonyPriority(Priority.First)]
+            public static void Prefix(Humanoid __instance, ItemDrop.ItemData item, ref float dt, ref float __state)
+            {
+                if (DrainCirclet(__instance as Player, item))
                     return;
 
-                if (__instance.IsPlayer() && UseFuel() && __instance.GetCirclet() != null && __instance.GetCirclet().IsCircletLightEnabled() && (__instance as Player).GetCurrentCraftingStation() == null)
-                    __instance.DrainEquipedItemDurability(__instance.GetCirclet(), dt);
+                __state = dt; 
+                dt = 0f;
+            }
+
+            [HarmonyPriority(Priority.First)]
+            public static void Postfix(Humanoid __instance, ItemDrop.ItemData item, ref float dt, float __state)
+            {
+                if (__state != 0f)
+                    dt = __state;
+                
             }
         }
 
@@ -461,9 +453,6 @@ namespace CircletExtended
         {
             public static void Postfix(Inventory __instance, List<ItemDrop.ItemData> worn)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (__instance == Player.m_localPlayer?.GetInventory() && UseFuel())
                 {
                     for (int i = worn.Count - 1; i >= 0; i--)
@@ -494,9 +483,6 @@ namespace CircletExtended
             [HarmonyBefore("shudnal.ExtraSlots")]
             private static void Prefix(ItemDrop.ItemData item)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (!getFeaturesByUpgrade.Value)
                     return;
 

@@ -16,15 +16,14 @@ namespace CircletExtended
     [BepInDependency("shudnal.ExtraSlots", BepInDependency.DependencyFlags.SoftDependency)]
     public class CircletExtended : BaseUnityPlugin
     {
-        const string pluginID = "shudnal.CircletExtended";
-        const string pluginName = "Circlet Extended";
-        const string pluginVersion = "1.0.19";
+        public const string pluginID = "shudnal.CircletExtended";
+        public const string pluginName = "Circlet Extended";
+        public const string pluginVersion = "1.1.0";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
         internal static readonly ConfigSync configSync = new ConfigSync(pluginID) { DisplayName = pluginName, CurrentVersion = pluginVersion, MinimumRequiredVersion = pluginVersion };
 
-        public static ConfigEntry<bool> modEnabled;
         private static ConfigEntry<bool> configLocked;
         private static ConfigEntry<bool> loggingEnabled;
 
@@ -45,6 +44,7 @@ namespace CircletExtended
         public static ConfigEntry<bool> enableOverload;
         public static ConfigEntry<bool> enableDemister;
         public static ConfigEntry<bool> enablePutOnTop;
+        public static ConfigEntry<bool> enableSpotLight;
 
         public static ConfigEntry<int> fuelMinutes;
         public static ConfigEntry<int> fuelPerLevel;
@@ -88,6 +88,8 @@ namespace CircletExtended
         public static ConfigEntry<float> maxRange;
         public static ConfigEntry<float> pointIntensity;
         public static ConfigEntry<float> pointRange;
+        public static ConfigEntry<float> spotIntensity;
+        public static ConfigEntry<float> spotRange;
 
         public static ConfigEntry<int> maxSteps2;
         public static ConfigEntry<float> minAngle2;
@@ -98,6 +100,8 @@ namespace CircletExtended
         public static ConfigEntry<float> maxRange2;
         public static ConfigEntry<float> pointIntensity2;
         public static ConfigEntry<float> pointRange2;
+        public static ConfigEntry<float> spotIntensity2;
+        public static ConfigEntry<float> spotRange2;
 
         public static ConfigEntry<int> maxSteps3;
         public static ConfigEntry<float> minAngle3;
@@ -108,6 +112,8 @@ namespace CircletExtended
         public static ConfigEntry<float> maxRange3;
         public static ConfigEntry<float> pointIntensity3;
         public static ConfigEntry<float> pointRange3;
+        public static ConfigEntry<float> spotIntensity3;
+        public static ConfigEntry<float> spotRange3;
 
         public static ConfigEntry<int> maxSteps4;
         public static ConfigEntry<float> minAngle4;
@@ -118,6 +124,8 @@ namespace CircletExtended
         public static ConfigEntry<float> maxRange4;
         public static ConfigEntry<float> pointIntensity4;
         public static ConfigEntry<float> pointRange4;
+        public static ConfigEntry<float> spotIntensity4;
+        public static ConfigEntry<float> spotRange4;
 
         internal static CircletExtended instance;
 
@@ -169,26 +177,27 @@ namespace CircletExtended
         {
             config("General", "NexusID", 2617, "Nexus mod ID for updates", false);
 
-            modEnabled = config("General", "Enabled", defaultValue: true, "Enable the mod.");
             configLocked = config("General", "Lock Configuration", defaultValue: true, "Configuration is locked and can be changed by server admins only.");
             loggingEnabled = config("General", "Logging enabled", defaultValue: false, "Enable logging. [Not Synced with Server]", false);
 
-            circletColor = config("Circlet", "Light color", defaultValue: new Color(1f, 0.9f, 0.75f, 1f), "Circlet beam light color. Changing this ingame will change current circlet color [Not Synced with Server]", false);
+            circletColor = config("Circlet", "Light color", defaultValue: new Color(1f, 0.9f, 0.75f, 1f), "Circlet beam light color. Changing this ingame will change current Circlet color [Not Synced with Server]", false);
             disableOnSleep = config("Circlet", "Disable when sleeping", defaultValue: true, "Turn off the light when sleeping. [Not Synced with Server]", false);
-            enableShadows = config("Circlet", "Enables shadows toggle", defaultValue: true, "Enables option to toggle circlet's light to emit shadows. Disable if it impacts your performance. [Not Synced with Server]", false);
+            enableShadows = config("Circlet", "Enables shadows toggle", defaultValue: true, "Enables option to toggle Circlet's light to emit shadows. Disable if it impacts your performance. [Not Synced with Server]", false);
 
-            getFeaturesByUpgrade = config("Circlet - Features", "Get features by circlet upgrade", defaultValue: true, "Get circlet features by upgrading it. If False all features are available by default.\n" +
+            getFeaturesByUpgrade = config("Circlet - Features", "Get features by circlet upgrade", defaultValue: true, "Get Circlet features by upgrading it. If False all features are available by default.\n" +
                                                                                                                         "If True the order of upgrades are \"Default\" -> \"Put on top\" -> \"Overload\" -> \"Demister\"");
-            overloadChargesPerLevel = config("Circlet - Features", "Overload charges", 50, "How many overload charges is available. It is the fraction of durability being damaged on Overload use. x2 if upgrades are disabled or quality is maximum.");
-            enableOverload = config("Circlet - Features", "Enable overload", defaultValue: true, "Enables overload. Press hotkey to blind opponents with a bright flash at the cost of some circlet durability");
+            overloadChargesPerLevel = config("Circlet - Features", "Overload charges", 20, "How many overload charges is available. It is the fraction of durability being damaged on Overload use. x2 if upgrades are disabled or quality is maximum.");
+            enableOverload = config("Circlet - Features", "Enable overload", defaultValue: true, "Enables overload. Press hotkey to blind opponents with a bright flash at the cost of some Circlet durability");
             enableDemister = config("Circlet - Features", "Enable demister", defaultValue: true, "Enables demister. Press hotkey to spawn a little wisp to push away the mists");
-            enablePutOnTop = config("Circlet - Features", "Enable put on top", defaultValue: true, "Enables equipping circlet on top of other helmet. Equip circlet without using a helmet slot.");
+            enablePutOnTop = config("Circlet - Features", "Enable put on top", defaultValue: true, "Enables equipping Circlet on top of other helmet. Equip Circlet without using a helmet slot.");
+            enableSpotLight = config("Circlet - Features", "Enable spot light", defaultValue: true, "Enables toggleable omnidirectional dim light in a small radius around Circlet bearer. You may want to disable it if you use HipLantern mod.");
 
             getFeaturesByUpgrade.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
             getFeaturesByUpgrade.SettingChanged += (sender, args) => CircletItem.FillRecipe();
             enablePutOnTop.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
+            enableSpotLight.SettingChanged += (sender, args) => DvergerLightController.UpdateSpotLights();
 
-            fuelMinutes = config("Circlet - Fuel", "Basic fuel capacity", defaultValue: 360, "Time in minutes required to consume all fuel. Set to 0 to not consume fuel.");
+            fuelMinutes = config("Circlet - Fuel", "Basic fuel capacity", defaultValue: 120, "Time in minutes required to consume all fuel. Set to 0 to not consume fuel.");
             fuelPerLevel = config("Circlet - Fuel", "Fuel per level", defaultValue: 120, "Time in minutes added per quality level");
 
             fuelMinutes.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
@@ -196,7 +205,7 @@ namespace CircletExtended
 
             enableOverloadDemister = config("Circlet - Overload demister", "Enable temporary demister on overload", defaultValue: true, "Push away mist on overload activation");
             overloadDemisterRange = config("Circlet - Overload demister", "Range", defaultValue: 40f, "Maximum range");
-            overloadDemisterTime = config("Circlet - Overload demister", "Time", defaultValue: 8f, "Time to gradually decrease effect radius");
+            overloadDemisterTime = config("Circlet - Overload demister", "Time", defaultValue: 10f, "Time to gradually decrease effect radius");
 
             equipCircletUnderHelmet = config("Circlet - Put on top", "Equip under helmet", defaultValue: true, "If enabled - Circlet will be invisible if put on top of the helmet." +
                                                                                                                "\nIf disabled - Circlet will replace helmet");
@@ -235,7 +244,7 @@ namespace CircletExtended
             widenShortcut = config("Hotkeys", "Beam widen", defaultValue: new KeyboardShortcut(KeyCode.RightArrow), "Widen beam shortcut. [Not Synced with Server]", false);
             narrowShortcut = config("Hotkeys", "Beam narrow", defaultValue: new KeyboardShortcut(KeyCode.LeftArrow), "Narrow beam shortcut. [Not Synced with Server]", false);
             overloadShortcut = config("Hotkeys", "Overload", defaultValue: new KeyboardShortcut(KeyCode.T), "Overload shortcut. Blind opponents with a bright flash at the cost of some circlet durability. [Not Synced with Server]", false);
-            toggleShortcut = config("Hotkeys", "Toggle light", defaultValue: new KeyboardShortcut(KeyCode.UpArrow), "Toggle main light shortcut. Enable/disable frontlight. [Not Synced with Server]", false);
+            toggleShortcut = config("Hotkeys", "Toggle light", defaultValue: new KeyboardShortcut(KeyCode.G), "Toggle main light shortcut. Enable/disable frontlight. [Not Synced with Server]", false);
             toggleDemisterShortcut = config("Hotkeys", "Toggle demister", defaultValue: new KeyboardShortcut(KeyCode.DownArrow), "Toggle demister shortcut. Spawn/despawn demister wisplight. [Not Synced with Server]", false);
 
             increaseIntensityShortcut = config("Hotkeys - Extra", "Intensity increase", defaultValue: new KeyboardShortcut(KeyCode.UpArrow, new KeyCode[1] { KeyCode.LeftShift }), "Increase intensity shortcut. Light becomes brighter and have more range. Intensity is capped at 150% [Not Synced with Server]", false);
@@ -262,6 +271,8 @@ namespace CircletExtended
             maxRange = config("Light - Default", "Max Range", 15.0f, "The range of the beam at the widest setting");
             pointIntensity = config("Light - Default", "Point Intensity", 1.1f, "The intensity of the Dverger light pool on the point light setting.");
             pointRange = config("Light - Default", "Point Range", 10.0f, "The range of the Dverger light pool on the point light setting.");
+            spotIntensity = config("Light - Default", "Spot Intensity", 1.0f, "The intensity of the Dverger spot light.");
+            spotRange = config("Light - Default", "Spot Range", 10.0f, "The range of the Dverger spot light pool.");
 
             maxSteps2 = config("Light - Quality 2", "Max Steps", 3, "Define how many steps of focus the Dverger light beam has. Must be at least 2.");
             minAngle2 = config("Light - Quality 2", "Min Angle", 30.0f, "The angle of the beam at the narrowest setting.");
@@ -272,6 +283,8 @@ namespace CircletExtended
             maxRange2 = config("Light - Quality 2", "Max Range", 15.0f, "The range of the beam at the widest setting");
             pointIntensity2 = config("Light - Quality 2", "Point Intensity", 1.1f, "The intensity of the Dverger light pool on the point light setting.");
             pointRange2 = config("Light - Quality 2", "Point Range", 10.0f, "The range of the Dverger light pool on the point light setting.");
+            spotIntensity2 = config("Light - Quality 2", "Spot Intensity", 1.0f, "The intensity of the Dverger spot light.");
+            spotRange2 = config("Light - Quality 2", "Spot Range", 10.0f, "The range of the Dverger spot light pool.");
 
             maxSteps3 = config("Light - Quality 3", "Max Steps", 3, "Define how many steps of focus the Dverger light beam has. Must be at least 2.");
             minAngle3 = config("Light - Quality 3", "Min Angle", 30.0f, "The angle of the beam at the narrowest setting.");
@@ -282,6 +295,8 @@ namespace CircletExtended
             maxRange3 = config("Light - Quality 3", "Max Range", 15.0f, "The range of the beam at the widest setting");
             pointIntensity3 = config("Light - Quality 3", "Point Intensity", 1.1f, "The intensity of the Dverger light pool on the point light setting.");
             pointRange3 = config("Light - Quality 3", "Point Range", 10.0f, "The range of the Dverger light pool on the point light setting.");
+            spotIntensity3 = config("Light - Quality 3", "Spot Intensity", 1.0f, "The intensity of the Dverger spot light.");
+            spotRange3 = config("Light - Quality 3", "Spot Range", 10.0f, "The range of the Dverger spot light pool.");
 
             maxSteps4 = config("Light - Quality 4", "Max Steps", 3, "Define how many steps of focus the Dverger light beam has. Must be at least 2.");
             minAngle4 = config("Light - Quality 4", "Min Angle", 30.0f, "The angle of the beam at the narrowest setting.");
@@ -292,6 +307,12 @@ namespace CircletExtended
             maxRange4 = config("Light - Quality 4", "Max Range", 15.0f, "The range of the beam at the widest setting");
             pointIntensity4 = config("Light - Quality 4", "Point Intensity", 1.1f, "The intensity of the Dverger light pool on the point light setting.");
             pointRange4 = config("Light - Quality 4", "Point Range", 10.0f, "The range of the Dverger light pool on the point light setting.");
+            spotIntensity4 = config("Light - Quality 4", "Spot Intensity", 1.0f, "The intensity of the Dverger spot light.");
+            spotRange4 = config("Light - Quality 4", "Spot Range", 10.0f, "The range of the Dverger spot light pool.");
+
+            instance.Config.Where(cfg => cfg.Key.Section.StartsWith("Light - ") && cfg.Value is ConfigEntry<float>)
+                            .Select(cfg => cfg.Value as ConfigEntry<float>)
+                            .Do(cfg => cfg.SettingChanged += (sender, args) => DvergerLightController.UpdateQualityLevels());
 
             FillShortcuts();
 
@@ -312,7 +333,7 @@ namespace CircletExtended
             AddShortcut(shortcutsModifiers, overloadShortcut);
             AddShortcut(shortcutsModifiers, toggleDemisterShortcut);
 
-            hotkeys = shortcutsModifiers.OrderByDescending(x => x.Value).Select(x => x.Key).ToList();
+            hotkeys = shortcutsModifiers.OrderByDescending(x => x.Value).Select(x => x.Key).Distinct().ToList();
         }
 
         private void FillHelmets()
@@ -506,6 +527,44 @@ namespace CircletExtended
             };
 
             return pointRange.Value;
+        }
+
+        public static float GetSpotIntensity(int quality)
+        {
+            int targetQuality = getFeaturesByUpgrade.Value ? Mathf.Clamp(quality, 1, 4) : 1;
+
+            switch (targetQuality)
+            {
+                case 1:
+                    return spotIntensity.Value;
+                case 2:
+                    return spotIntensity2.Value;
+                case 3:
+                    return spotIntensity3.Value;
+                case 4:
+                    return spotIntensity4.Value;
+            };
+
+            return spotIntensity.Value;
+        }
+
+        public static float GetSpotRange(int quality)
+        {
+            int targetQuality = getFeaturesByUpgrade.Value ? Mathf.Clamp(quality, 1, 4) : 1;
+
+            switch (targetQuality)
+            {
+                case 1:
+                    return spotRange.Value;
+                case 2:
+                    return spotRange2.Value;
+                case 3:
+                    return spotRange3.Value;
+                case 4:
+                    return spotRange4.Value;
+            };
+
+            return spotRange.Value;
         }
     }
 }

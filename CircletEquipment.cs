@@ -33,9 +33,6 @@ namespace CircletExtended
         {
             private static void Postfix(Humanoid __instance, VisEquipment visEq)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (!enablePutOnTop.Value)
                     return;
 
@@ -58,9 +55,6 @@ namespace CircletExtended
         {
             private static void Postfix(Humanoid __instance, ref float __result)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (!enablePutOnTop.Value)
                     return;
 
@@ -151,9 +145,6 @@ namespace CircletExtended
         {
             private static void Prefix(VisEquipment __instance)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (!enablePutOnTop.Value)
                     return;
 
@@ -182,9 +173,6 @@ namespace CircletExtended
         {
             private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, ref bool __result, bool triggerEquipEffects)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (!enablePutOnTop.Value)
                     return;
 
@@ -225,9 +213,6 @@ namespace CircletExtended
         {
             private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, bool triggerEquipEffects)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (!enablePutOnTop.Value)
                     return;
 
@@ -247,9 +232,6 @@ namespace CircletExtended
         {
             public static void Postfix(Humanoid __instance)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (!enablePutOnTop.Value)
                     return;
 
@@ -262,9 +244,6 @@ namespace CircletExtended
         {
             private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, ref bool __result)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (!enablePutOnTop.Value)
                     return;
 
@@ -280,9 +259,6 @@ namespace CircletExtended
         {
             private static void Postfix(ItemDrop.ItemData __instance, ref bool __result)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (!enablePutOnTop.Value)
                     return;
 
@@ -311,9 +287,6 @@ namespace CircletExtended
         {
             private static void Postfix(ItemStand __instance)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (!enablePutOnTop.Value)
                     return;
 
@@ -330,9 +303,6 @@ namespace CircletExtended
         {
             private static void Postfix(ArmorStand __instance)
             {
-                if (!modEnabled.Value)
-                    return;
-
                 if (!enablePutOnTop.Value)
                     return;
 

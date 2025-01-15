@@ -1,3 +1,12 @@
+# 1.1.0
+* default values for config changed a bit (reduced overload charges amount to 20 (40 at lvl4) but increased temporary demister time on overload; basic fuel capacity reduced to 120 reaching 480 at lvl4)
+* many aspects of durability using were refined (fuel will only drain when light is on, circlet will be properly unequipped when broken)
+* fixed in multiplayer overload effect spawn several times
+* custom slot for ExtraSlots will only be active if you upgrade Circlet to lvl2 to make it more clear Circlet can go into custom slot only after upgrade
+* spot light made disableable with server sync. In case you play with HipLantern mod to not duplicate its functions.
+* spot light range and intensity made configurable with quality level
+* default light toggle hotkey changed to G
+
 # 1.0.19
 * mod description updated to make more clear lvl1 Circlet works as helmet
 
