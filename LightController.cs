@@ -169,8 +169,8 @@ namespace CircletExtended
         private void Update()
         {
             Player player = Player.m_localPlayer;
-            if (player != null && player == m_playerAttached && player.TakeInput() && StateChanged(player))
-                SaveState(changedByPlayer:true);
+            if (player != null && player == m_playerAttached && player.TakeInput() && StateChanged(player, out string message))
+                SaveState(changedByPlayer:true, message:message);
 
             UpdateLights();
         }
@@ -193,10 +193,12 @@ namespace CircletExtended
             return disableOnSleep.Value && m_playerAttached != null && m_playerAttached.InBed();
         }
 
-        private bool StateChanged(Player player)
+        private bool StateChanged(Player player, out string playerMessage)
         {
             if (m_item != null)
                 m_state.quality = m_item.m_quality;
+
+            playerMessage = string.Empty;
 
             if (m_state.forceoff != ForceOff())
             {
@@ -211,6 +213,11 @@ namespace CircletExtended
                 {
                     m_state.on = !m_state.on;
                     LogInfo($"Toggle {(m_state.on ? "on" : "off")}");
+                    if (toggleSpotWithFront.Value)
+                    {
+                        m_state.spot = !m_state.spot;
+                        LogInfo($"Toggle spot {(m_state.spot ? "on" : "off")}");
+                    }
                     return true;
                 }
                 else if (QualityLevelAvailable(2) && m_spotLight && IsShortcutDown(hotkey, toggleSpotShortcut))
@@ -258,6 +265,7 @@ namespace CircletExtended
                 {
                     m_state.shadows = !m_state.shadows;
                     LogInfo($"Toggle shadows {(m_state.shadows ? "on" : "off")}");
+                    playerMessage = $"$settings_pointlightshadows: {(m_state.shadows ? "$hud_on" : "$hud_off")}";
                     return true;
                 }
                 else if (enableOverload.Value && QualityLevelAvailable(3) && IsShortcutDown(hotkey, overloadShortcut))
@@ -420,13 +428,16 @@ namespace CircletExtended
             return hotkey == shortcut.Definition.GetHashCode() && (shortcut.Value.IsDown() || Input.GetKeyDown(shortcut.Value.MainKey) && !shortcut.Value.Modifiers.Any());
         }
 
-        private void ShowMessage()
+        private void ShowMessage(string message)
         {
             if (MessageHud.instance != null && m_playerAttached != null && Player.m_localPlayer == m_playerAttached)
             {
                 MessageHud.instance.m_msgQeue.Clear();
                 MessageHud.instance.m_msgQueueTimer = 1f;
-                if (!m_state.forceoff && m_state.on)
+
+                if (!string.IsNullOrWhiteSpace(message))
+                    MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft, $"$item_helmet_dverger: {message}");
+                else if (!m_state.forceoff && m_state.on)
                     MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft, $"$item_helmet_dverger: $msg_level {m_state.level} ({m_state.intensity}%)");
                 else
                     MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft, "$item_helmet_dverger: $hud_off");
@@ -448,6 +459,8 @@ namespace CircletExtended
                 m_overloadDemister = demister.GetComponent<ParticleSystemForceField>();
                 m_overloadDemister.endRange = overloadDemisterRange.Value;
             }
+
+            m_frontLight.enabled = false;
 
             LoadState();
         }
@@ -534,7 +547,7 @@ namespace CircletExtended
             return true;
         }
 
-        private void SaveState(bool changedByPlayer = false)
+        private void SaveState(bool changedByPlayer = false, string message = "")
         {
             m_state.color = circletColor.Value;
 
@@ -554,7 +567,7 @@ namespace CircletExtended
                 if (m_item != null)
                     itemState[m_item] = m_state;
 
-                ShowMessage();
+                ShowMessage(message);
             }
 
             m_state.hash = 0;
@@ -655,7 +668,7 @@ namespace CircletExtended
         private void UpdateSpotLight()
         {
             if (enableSpotLight.Value && !m_spotLight && !gameObject.TryGetComponent(out m_spotLight))
-                m_spotLight = gameObject.AddComponent<Light>();
+                (m_spotLight = gameObject.AddComponent<Light>()).enabled = false;
             else if (!enableSpotLight.Value && m_spotLight)
             {
                 Destroy(m_spotLight);
@@ -902,4 +915,15 @@ namespace CircletExtended
         }
     }
 
+    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.EquipItem))]
+    public static class Humanoid_EquipItem_UpdateHashOnItemChange
+    {
+        private static void Postfix(Humanoid __instance, ItemDrop.ItemData item)
+        {
+            if (__instance.m_nview != null && __instance.m_nview.IsValid() && __instance.m_nview.IsOwner() && CircletItem.IsCircletItemData(item))
+            {
+                __instance.m_nview.GetZDO().Set(DvergerLightController.s_stateHash, 0);
+            }
+        }
+    }
 }

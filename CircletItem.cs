@@ -55,7 +55,7 @@ namespace CircletExtended
             if (!Player.m_localPlayer || Player.m_localPlayer.m_isLoading)
                 return true;
 
-            return Player.m_localPlayer.IsKnownMaterial(itemDropNameHelmetDverger) && Player.m_localPlayer.IsKnownMaterial(itemDropNameHelmetDvergerLvl2);
+            return Player.m_localPlayer.IsKnownMaterial(itemDropNameHelmetDverger) && (!getFeaturesByUpgrade.Value || Player.m_localPlayer.IsKnownMaterial(itemDropNameHelmetDvergerLvl2));
         }
 
         public static bool IsCircletSlotAvailable() => itemSlotExtraSlots.Value && (!itemSlotExtraSlotsDiscovery.Value || IsCircletSlotKnown());

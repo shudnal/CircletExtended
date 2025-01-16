@@ -1,3 +1,8 @@
+# 1.1.1
+* Circlet slot will be available on acquiring when feature upgrade is disabled
+* more detailed hint text when shadows toggling
+* new config for toggling spot light with main light (disabled by default)
+
 # 1.1.0
 * default values for config changed a bit (reduced overload charges amount to 20 (40 at lvl4) but increased temporary demister time on overload; basic fuel capacity reduced to 120 reaching 480 at lvl4)
 * many aspects of durability using were refined (fuel will only drain when light is on, circlet will be properly unequipped when broken)

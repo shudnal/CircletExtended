@@ -18,7 +18,7 @@ namespace CircletExtended
     {
         public const string pluginID = "shudnal.CircletExtended";
         public const string pluginName = "Circlet Extended";
-        public const string pluginVersion = "1.1.0";
+        public const string pluginVersion = "1.1.1";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -76,6 +76,7 @@ namespace CircletExtended
         public static ConfigEntry<KeyboardShortcut> decreaseIntensityShortcut;
         public static ConfigEntry<KeyboardShortcut> toggleShadowsShortcut;
         public static ConfigEntry<KeyboardShortcut> toggleSpotShortcut;
+        public static ConfigEntry<bool> toggleSpotWithFront;
 
         public static ConfigEntry<KeyboardShortcut> overloadShortcut;
 
@@ -251,6 +252,7 @@ namespace CircletExtended
             decreaseIntensityShortcut = config("Hotkeys - Extra", "Intensity decrease", defaultValue: new KeyboardShortcut(KeyCode.DownArrow, new KeyCode[1] { KeyCode.LeftShift }), "Decrease intensity shortcut. Light becomes darker and have less range. Intensity is capped at 50% [Not Synced with Server]", false);
             toggleShadowsShortcut = config("Hotkeys - Extra", "Toggle shadows", defaultValue: new KeyboardShortcut(KeyCode.LeftArrow, new KeyCode[1] { KeyCode.LeftShift }), "Toggle shadows shortcut. Enables/disables the current light source to emit soft shadows. [Not Synced with Server]", false);
             toggleSpotShortcut = config("Hotkeys - Extra", "Toggle radiance", defaultValue: new KeyboardShortcut(KeyCode.RightArrow, new KeyCode[1] { KeyCode.LeftShift }), "Toggle spotlight shortcut. Enables/disables the radiance when circlet is equipped. [Not Synced with Server]", false);
+            toggleSpotWithFront = config("Hotkeys - Extra", "Toggle radiance with main light", defaultValue: false, "Toggle spotlight with main light. [Not Synced with Server]", false);
 
             widenShortcut.SettingChanged += (sender, args) => FillShortcuts();
             narrowShortcut.SettingChanged += (sender, args) => FillShortcuts();
