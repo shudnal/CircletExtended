@@ -1,3 +1,6 @@
+# 1.1.2
+* patch 0.220.3
+
 # 1.1.1
 * Circlet slot will be available on acquiring when feature upgrade is disabled
 * more detailed hint text when shadows toggling
