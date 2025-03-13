@@ -1,3 +1,6 @@
+# 1.1.4
+* default craft recipe requirement changed to use raw Bronze ingots instead of Bronze Helmet
+
 # 1.1.3
 * ServerSync updated
 

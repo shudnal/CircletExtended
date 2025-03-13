@@ -216,7 +216,7 @@ namespace CircletExtended
 
             equipCircletWithHelmet.SettingChanged += (sender, args) => FillHelmets();
 
-            circletRecipeQuality1 = config("Circlet - Recipe", "Create", defaultValue: "HelmetBronze:1,Ruby:1,SilverNecklace:1,SurtlingCore:10", "Recipe to create circet");
+            circletRecipeQuality1 = config("Circlet - Recipe", "Create", defaultValue: "Bronze:10,Ruby:1,SilverNecklace:1,SurtlingCore:10", "Recipe to create circet");
             circletRecipeQuality2 = config("Circlet - Recipe", "Upgrade quality 2", defaultValue: "Resin:20,LeatherScraps:10,IronNails:10,Chain:1", "Recipe to upgrade circet to quality 2");
             circletRecipeQuality3 = config("Circlet - Recipe", "Upgrade quality 3", defaultValue: "Thunderstone:5,Silver:1,JuteRed:2", "Recipe to upgrade circet to quality 3");
             circletRecipeQuality4 = config("Circlet - Recipe", "Upgrade quality 4", defaultValue: "Demister:1,BlackCore:1", "Recipe to upgrade circet to quality 4");
