@@ -186,6 +186,13 @@ namespace CircletExtended
                 if (!CircletItem.IsCircletItem(item))
                     return;
 
+                if (!CircletItem.CanCircletBeEquippedWithHelmet(__instance.m_helmetItem))
+                {
+                    if (triggerEquipEffects)
+                        __instance.Message(MessageHud.MessageType.Center, "$piece_armorstand_cantattach");
+                    return;
+                }
+
                 bool wasCirclet = __instance.GetCirclet() != null;
 
                 __instance.UnequipItem(__instance.GetCirclet(), triggerEquipEffects);
@@ -274,7 +281,7 @@ namespace CircletExtended
                 if (__instance != Player.m_localPlayer?.GetInventory())
                     return;
 
-                if (Player.m_localPlayer.GetCirclet() != null && !__instance.ContainsItem(Player.m_localPlayer.GetCirclet()))
+                if (Player.m_localPlayer.GetCirclet() is ItemDrop.ItemData circlet && (!__instance.ContainsItem(circlet) || !CircletItem.CanCircletBeEquippedWithHelmet(Player.m_localPlayer.m_helmetItem)))
                 {
                     Player.m_localPlayer.SetCirclet(null);
                     Player.m_localPlayer.SetupEquipment();
@@ -293,6 +300,9 @@ namespace CircletExtended
                 if (!visualStateItemStand.Value)
                     return;
 
+                if (__instance.m_nview?.IsValid() != true)
+                    return;
+
                 if (__instance.m_supportedTypes.Contains(ItemDrop.ItemData.ItemType.Helmet) && !__instance.m_supportedTypes.Contains(CircletItem.GetItemType()))
                     __instance.m_supportedTypes.Add(CircletItem.GetItemType());
             }
@@ -307,6 +317,9 @@ namespace CircletExtended
                     return;
 
                 if (!visualStateArmorStand.Value)
+                    return;
+
+                if (__instance.m_nview?.IsValid() != true)
                     return;
 
                 __instance.m_slots.Where(x => x.m_slot == VisSlot.Helmet && x.m_supportedTypes.Contains(ItemDrop.ItemData.ItemType.Helmet) && !x.m_supportedTypes.Contains(CircletItem.GetItemType()))

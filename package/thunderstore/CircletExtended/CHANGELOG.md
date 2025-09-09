@@ -1,5 +1,11 @@
 # 1.1.4
+* Call To Arms patch
 * default craft recipe requirement changed to use raw Bronze ingots instead of Bronze Helmet
+* new restriction options which helmet can be used along with Circlet
+* you can set emote to play on overload activation
+* minor overload fixes
+* fix for Circlet not being repairable
+* fix for rare incompatibility with InfinityHammer
 
 # 1.1.3
 * ServerSync updated

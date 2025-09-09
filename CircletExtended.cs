@@ -18,7 +18,7 @@ namespace CircletExtended
     {
         public const string pluginID = "shudnal.CircletExtended";
         public const string pluginName = "Circlet Extended";
-        public const string pluginVersion = "1.1.3";
+        public const string pluginVersion = "1.1.4";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -41,6 +41,7 @@ namespace CircletExtended
 
         public static ConfigEntry<bool> getFeaturesByUpgrade;
         public static ConfigEntry<int> overloadChargesPerLevel;
+        public static ConfigEntry<string> overloadEmote;
         public static ConfigEntry<bool> enableOverload;
         public static ConfigEntry<bool> enableDemister;
         public static ConfigEntry<bool> enablePutOnTop;
@@ -66,6 +67,9 @@ namespace CircletExtended
         public static ConfigEntry<string> circletRecipeQuality2;
         public static ConfigEntry<string> circletRecipeQuality3;
         public static ConfigEntry<string> circletRecipeQuality4;
+
+        public static ConfigEntry<string> circletHelmetWhiteList;
+        public static ConfigEntry<string> circletHelmetBlackList;
 
         public static ConfigEntry<KeyboardShortcut> widenShortcut;
         public static ConfigEntry<KeyboardShortcut> narrowShortcut;
@@ -192,6 +196,7 @@ namespace CircletExtended
             enableDemister = config("Circlet - Features", "Enable demister", defaultValue: true, "Enables demister. Press hotkey to spawn a little wisp to push away the mists");
             enablePutOnTop = config("Circlet - Features", "Enable put on top", defaultValue: true, "Enables equipping Circlet on top of other helmet. Equip Circlet without using a helmet slot.");
             enableSpotLight = config("Circlet - Features", "Enable spot light", defaultValue: true, "Enables toggleable omnidirectional dim light in a small radius around Circlet bearer. You may want to disable it if you use HipLantern mod.");
+            overloadEmote = config("Circlet - Features", "Overload emote", defaultValue: "", "Play emote on overload use");
 
             getFeaturesByUpgrade.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
             getFeaturesByUpgrade.SettingChanged += (sender, args) => CircletItem.FillRecipe();
@@ -199,7 +204,7 @@ namespace CircletExtended
             enableSpotLight.SettingChanged += (sender, args) => DvergerLightController.UpdateSpotLights();
 
             fuelMinutes = config("Circlet - Fuel", "Basic fuel capacity", defaultValue: 120, "Time in minutes required to consume all fuel. Set to 0 to not consume fuel.");
-            fuelPerLevel = config("Circlet - Fuel", "Fuel per level", defaultValue: 120, "Time in minutes added per quality level");
+            fuelPerLevel = config("Circlet - Fuel", "Fuel per level", defaultValue: 60, "Time in minutes added per quality level");
 
             fuelMinutes.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
             fuelPerLevel.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
@@ -225,6 +230,12 @@ namespace CircletExtended
             circletRecipeQuality2.SettingChanged += (sender, args) => CircletItem.FillRecipe();
             circletRecipeQuality3.SettingChanged += (sender, args) => CircletItem.FillRecipe();
             circletRecipeQuality4.SettingChanged += (sender, args) => CircletItem.FillRecipe();
+
+            circletHelmetWhiteList = config("Circlet - Restrictions", "Helmet white list", defaultValue: "", "List of helmets where hoop can ONLY be used with");
+            circletHelmetBlackList = config("Circlet - Restrictions", "Helmet black list", defaultValue: "", "List of helmets where hoop can NOT be used with");
+
+            circletHelmetWhiteList.SettingChanged += (sender, args) => CircletItem.UpdateCompatibleHelmetLists();
+            circletHelmetBlackList.SettingChanged += (sender, args) => CircletItem.UpdateCompatibleHelmetLists();
 
             visualStateItemDrop = config("Circlet - Visual state", "Enable itemdrop state", defaultValue: true, "Circlet dropped on the ground will preserve light state");
             visualStateItemStand = config("Circlet - Visual state", "Enable item stand state", defaultValue: true, "Circlet put on the item stand will preserve light state");

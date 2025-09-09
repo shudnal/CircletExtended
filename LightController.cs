@@ -71,6 +71,7 @@ namespace CircletExtended
 
         private static readonly List<DvergerLightController> Instances = new List<DvergerLightController>();
         private static readonly Dictionary<ItemDrop.ItemData, LightState> itemState = new Dictionary<ItemDrop.ItemData, LightState>();
+        private static readonly List<Character> s_hitCharacters = new List<Character>();
 
         const int c_characterLayer = 9;
 
@@ -294,12 +295,15 @@ namespace CircletExtended
                 s_rayMaskCharacters = LayerMask.GetMask("character", "character_net", "character_ghost", "character_noenv");
             }
 
+            if (player.m_nview?.IsOwner() != true)
+                return;
+
             ZNetScene.instance.SpawnObject(player.transform.position, m_frontLight.transform.rotation, overloadEffect);
 
             if (player.InWater())
             {
                 player.AddLightningDamage(5f);
-                player.AddStaggerDamage(player.GetStaggerTreshold() + 1f, -player.transform.forward);
+                player.AddStaggerDamage(player.GetStaggerTreshold() + 1f, -player.transform.forward, null);
             }
 
             StartCoroutine(OverloadIntensity());
@@ -312,6 +316,7 @@ namespace CircletExtended
             RaycastHit[] array = Physics.SphereCastAll(m_frontLight.transform.position, radius, m_frontLight.transform.forward, m_frontLight.range, s_rayMaskCharacters);
             if (array.Length != 0)
             {
+                s_hitCharacters.Clear();
                 for (int i = 0; i < array.Length; i++)
                 {
                     RaycastHit hit = array[i];
@@ -321,7 +326,7 @@ namespace CircletExtended
                     IDestructible destructible = gameObject ? gameObject.GetComponent<IDestructible>() : null;
                     if (destructible != null)
                     {
-                        hitCharacter = (destructible is Character);
+                        hitCharacter = destructible is Character;
                         if (!IsValidTarget(destructible))
                             continue;
                     }
@@ -331,6 +336,11 @@ namespace CircletExtended
 
                     Character character = destructible as Character;
 
+                    if (s_hitCharacters.Contains(character))
+                        continue;
+
+                    s_hitCharacters.Add(character);
+
                     Vector3 charPos = character.m_head != null ? character.GetHeadPoint() : character.GetTopPoint();
 
                     Vector3 vector = charPos - m_frontLight.transform.position;
@@ -338,12 +348,20 @@ namespace CircletExtended
                     float distance = Utils.DistanceXZ(m_frontLight.transform.position, charPos);
 
                     if (distance <= 5f || angleCheck && distance <= m_frontLight.range && !Physics.Linecast(m_frontLight.transform.position, charPos, s_rayMaskSolids))
-                        character.AddStaggerDamage(character.GetStaggerTreshold() + 1f, vector.normalized);
+                    {
+                        float adrenaline = player.m_staggerEnemyAdrenaline;
+                        player.m_staggerEnemyAdrenaline = 1;
+                        character.AddStaggerDamage(character.GetStaggerTreshold() + 1f, vector.normalized, new HitData(0) { m_attacker = player.GetZDOID() });
+                        player.m_staggerEnemyAdrenaline = adrenaline;
+                    }
                 }
             }
 
             m_item.m_shared.m_useDurability = true;
             m_item.m_durability = Mathf.Max(m_item.m_durability - (m_item.GetMaxDurability() / m_overloadCharges), 0f);
+
+            if (!string.IsNullOrWhiteSpace(overloadEmote.Value))
+                player.StartEmote(overloadEmote.Value.ToLower());
         }
 
         public IEnumerator OverloadIntensity()
@@ -642,7 +660,6 @@ namespace CircletExtended
                 m_spotLight.intensity = m_spotIntensity;
                 m_spotLight.range = m_spotRange;
 
-
                 if (m_state.overloaded)
                     m_spotLight.intensity = m_state.overload;
             }
@@ -712,6 +729,8 @@ namespace CircletExtended
         public static void UpdateSpotLights() => Instances.Do(controller => controller.UpdateSpotLight());
 
         public static void UpdateQualityLevels() => Instances.Do(controller => controller.UpdateQualityLevel());
+
+        public static bool IsInOverload(Player player) => Instances.Any(controller => controller.m_playerAttached == player && controller.m_state.overloaded);
 
         public static void RegisterEffects()
         {
@@ -827,6 +846,9 @@ namespace CircletExtended
             if (!visualStateItemStand.Value)
                 return;
 
+            if (__instance.m_nview?.IsValid() != true)
+                return;
+
             if (!CircletItem.IsCircletItemName(__instance.GetAttachedItem()))
                 return;
 
@@ -860,9 +882,12 @@ namespace CircletExtended
     [HarmonyPatch(typeof(ArmorStand), nameof(ArmorStand.SetVisualItem))]
     public static class ArmorStand_SetVisualItem_ArmorStandAttachment
     {
-        private static void Prefix(int index, List<ArmorStand.ArmorStandSlot> ___m_slots, string itemName, int variant, ref bool __state)
+        private static void Prefix(ArmorStand __instance, int index, List<ArmorStand.ArmorStandSlot> ___m_slots, string itemName, int variant, ref bool __state)
         {
             if (!visualStateArmorStand.Value)
+                return;
+
+            if (__instance.m_nview?.IsValid() != true)
                 return;
 
             if (!CircletItem.IsCircletItemName(itemName))
@@ -921,9 +946,13 @@ namespace CircletExtended
         private static void Postfix(Humanoid __instance, ItemDrop.ItemData item)
         {
             if (__instance.m_nview != null && __instance.m_nview.IsValid() && __instance.m_nview.IsOwner() && CircletItem.IsCircletItemData(item))
-            {
                 __instance.m_nview.GetZDO().Set(DvergerLightController.s_stateHash, 0);
-            }
         }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.StopEmote))]
+    public static class Player_StopEmote_EmoteOnOverload
+    {
+        private static bool Prefix(Player __instance) => string.IsNullOrWhiteSpace(overloadEmote.Value) || !DvergerLightController.IsInOverload(__instance);
     }
 }

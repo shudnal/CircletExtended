@@ -16,7 +16,48 @@ namespace CircletExtended
 
         public static GameObject circletPrefab;
 
+        public static List<string> helmetWhiteList = new List<string>();
+        public static List<string> helmetBlackList = new List<string>();
+        public static bool helmetListFilled = false;
+
         public const int maxQuality = 4;
+
+        public static void UpdateCompatibleHelmetLists()
+        {
+            helmetWhiteList.Clear();
+            circletHelmetWhiteList.Value.Split(',').Select(p => p.Trim().ToLower()).Where(p => !string.IsNullOrWhiteSpace(p)).Do(helmetWhiteList.Add);
+           
+            helmetBlackList.Clear();
+            circletHelmetBlackList.Value.Split(',').Select(p => p.Trim().ToLower()).Where(p => !string.IsNullOrWhiteSpace(p)).Do(helmetBlackList.Add);
+
+            helmetListFilled = helmetWhiteList.Count + helmetBlackList.Count > 0;
+        }
+
+        internal static bool CanCircletBeEquippedWithHelmet(ItemDrop.ItemData helmet)
+        {
+            if (helmet == null)
+                return true;
+
+            if (!helmetListFilled)
+                return true;
+
+            if (helmetWhiteList.Contains(helmet.m_shared.m_name.ToLower()))
+                return true;
+
+            if (helmetWhiteList.Contains(helmet.m_dropPrefab?.name.ToLower()))
+                return true;
+
+            if (helmetWhiteList.Count > 0)
+                return false;
+
+            if (helmetBlackList.Contains(helmet.m_shared.m_name.ToLower()))
+                return false;
+
+            if (helmetBlackList.Contains(helmet.m_dropPrefab?.name.ToLower()))
+                return false;
+
+            return true;
+        }
 
         internal static ItemDrop.ItemData.ItemType GetItemType()
         {
@@ -210,6 +251,8 @@ namespace CircletExtended
                 DvergerLightController.RegisterEffects();
 
                 FillRecipe();
+
+                UpdateCompatibleHelmetLists();
             }
         }
 
@@ -229,7 +272,7 @@ namespace CircletExtended
         }
 
         [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
-        public class Player_OnSpawned_CircletStats
+        public static class Player_OnSpawned_CircletStats
         {
             public static void Postfix(Player __instance)
             {
@@ -244,7 +287,7 @@ namespace CircletExtended
         }
 
         [HarmonyPatch(typeof(Inventory), nameof(Inventory.Load))]
-        public class Inventory_Load_CircletStats
+        public static class Inventory_Load_CircletStats
         {
             public static void Postfix(Inventory __instance)
             {
@@ -268,7 +311,7 @@ namespace CircletExtended
         }
 
         [HarmonyPatch(typeof(Piece.Requirement), nameof(Piece.Requirement.GetAmount))]
-        public class PieceRequirement_GetAmount_CircletUpgrade
+        public static class PieceRequirement_GetAmount_CircletUpgrade
         {
             public static void Postfix(Piece.Requirement __instance, int qualityLevel, ref int __result)
             {
@@ -281,7 +324,7 @@ namespace CircletExtended
         }
 
         [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.DoCrafting))]
-        public class InventoryGui_DoCrafting_CircletUpgrade
+        public static class InventoryGui_DoCrafting_CircletUpgrade
         {
             private static bool PatchMethod(ItemDrop.ItemData ___m_craftUpgradeItem, Recipe ___m_craftRecipe)
             {
@@ -329,7 +372,7 @@ namespace CircletExtended
         }
 
         [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.SetupRequirementList))]
-        public class InventoryGui_SetupRequirementList_CircletUpgrade
+        public static class InventoryGui_SetupRequirementList_CircletUpgrade
         {
             private static bool PatchMethod(KeyValuePair<Recipe, ItemDrop.ItemData> ___m_selectedRecipe)
             {
@@ -365,7 +408,7 @@ namespace CircletExtended
         }
 
         [HarmonyPatch(typeof(Player), nameof(Player.HaveRequirementItems))]
-        public class Player_HaveRequirementItems_CircletUpgrade
+        public static class Player_HaveRequirementItems_CircletUpgrade
         {
             private static bool PatchMethod(bool discover, Recipe piece)
             {
@@ -404,7 +447,7 @@ namespace CircletExtended
         }
 
         [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UpdateEquipment))]
-        public class Humanoid_UpdateEquipment_CircletEquipmentDrain
+        public static class Humanoid_UpdateEquipment_CircletEquipmentDrain
         {
             public static void Postfix(Humanoid __instance, float dt)
             {
@@ -414,7 +457,7 @@ namespace CircletExtended
         }
 
         [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.DrainEquipedItemDurability))]
-        public class Humanoid_DrainEquipedItemDurability_CircletEquipmentDrain
+        public static class Humanoid_DrainEquipedItemDurability_CircletEquipmentDrain
         {
             public static bool DrainCirclet(Player player, ItemDrop.ItemData item) => IsCircletItemData(item) && UseFuel() && item.IsCircletLightEnabled() && player.GetCurrentCraftingStation() == null;
             
@@ -438,7 +481,7 @@ namespace CircletExtended
         }
 
         [HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetTooltip), typeof(ItemDrop.ItemData), typeof(int), typeof(bool), typeof(float), typeof(int))]
-        private class ItemDropItemData_GetTooltip_ItemTooltip
+        private static class ItemDropItemData_GetTooltip_ItemTooltip
         {
             [HarmonyPriority(Priority.Last)]
             private static void Postfix(ItemDrop.ItemData item, ref string __result)
@@ -449,21 +492,27 @@ namespace CircletExtended
         }
 
         [HarmonyPatch(typeof(Inventory), nameof(Inventory.GetWornItems))]
-        public class Inventory_GetWornItems_CircletAlwaysLastToRepair
+        public static class Inventory_GetWornItems_CircletAlwaysLastToRepair
         {
             public static void Postfix(Inventory __instance, List<ItemDrop.ItemData> worn)
             {
-                if (__instance == Player.m_localPlayer?.GetInventory() && UseFuel())
-                {
+                if (worn.Count > 0 && __instance == Player.m_localPlayer?.GetInventory() && UseFuel())
                     for (int i = worn.Count - 1; i >= 0; i--)
-                    {
-                        if (IsCircletItemData(worn[i]) && worn[i].m_equipped && (Player.m_localPlayer?.GetCirclet() == worn[i] || Player.m_localPlayer.m_helmetItem == worn[i]))
+                        if (worn[i] is ItemDrop.ItemData item && IsCircletItemData(item) && item.m_equipped && Player.m_localPlayer.IsItemEquiped(item))
                         {
-                            worn.Add(worn[i]);
+                            worn.Add(item);
                             worn.RemoveAt(i);
                         }
-                    }
-                }
+            }
+        }
+
+        [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.CanRepair))]
+        public static class InventoryGui_CanRepair_PatchCirclets
+        {
+            private static void Postfix(ItemDrop.ItemData item, ref bool __result)
+            {
+                if (Player.m_localPlayer != null && IsCircletItemData(item) && UseFuel())
+                    __result = true;
             }
         }
 
