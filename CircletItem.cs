@@ -459,12 +459,13 @@ namespace CircletExtended
         [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.DrainEquipedItemDurability))]
         public static class Humanoid_DrainEquipedItemDurability_CircletEquipmentDrain
         {
-            public static bool DrainCirclet(Player player, ItemDrop.ItemData item) => IsCircletItemData(item) && UseFuel() && item.IsCircletLightEnabled() && player.GetCurrentCraftingStation() == null;
-            
             [HarmonyPriority(Priority.First)]
             public static void Prefix(Humanoid __instance, ItemDrop.ItemData item, ref float dt, ref float __state)
             {
-                if (DrainCirclet(__instance as Player, item))
+                if (!IsCircletItemData(item))
+                    return;
+
+                if (UseFuel() && item.IsCircletLightEnabled() && __instance.IsPlayer() && (__instance as Player).GetCurrentCraftingStation() == null)
                     return;
 
                 __state = dt; 
@@ -476,7 +477,6 @@ namespace CircletExtended
             {
                 if (__state != 0f)
                     dt = __state;
-                
             }
         }
 

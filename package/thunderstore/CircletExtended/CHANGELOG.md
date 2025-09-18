@@ -1,3 +1,6 @@
+# 1.1.5
+* fixed circlet making other tools not draining durability
+
 # 1.1.4
 * Call To Arms patch
 * default craft recipe requirement changed to use raw Bronze ingots instead of Bronze Helmet
