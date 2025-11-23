@@ -259,7 +259,19 @@ namespace CircletExtended
         [HarmonyPatch(typeof(Player), nameof(Player.AddKnownItem))]
         public static class Player_AddKnownItem_CircletRecipeAvailableAfterAcquiring
         {
-            private static void Prefix(Player __instance, ItemDrop.ItemData item, ref bool __state) => __state = !__instance.IsKnownMaterial(itemDropNameHelmetDverger) && IsCircletItemData(item);
+            private static void Prefix(Player __instance, ItemDrop.ItemData item, ref bool __state)
+            {
+                if (!IsCircletItemData(item))
+                    return;
+
+                if (__instance.IsKnownMaterial(itemDropNameHelmetDverger))
+                {
+                    if (!__instance.IsRecipeKnown(itemDropNameHelmetDverger) && ObjectDB.instance.m_recipes.FirstOrDefault(x => IsCircletItemName(x.name)) is Recipe recipe)
+                        __instance.AddKnownRecipe(recipe);
+                }
+                else
+                    __state = true;
+            }
 
             private static void Postfix(Player __instance, ItemDrop.ItemData item, bool __state)
             {

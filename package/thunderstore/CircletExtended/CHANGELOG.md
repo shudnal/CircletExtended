@@ -1,3 +1,7 @@
+# 1.1.6
+* fixed circlet not appearing in upgrade and craft menu if mod is installed AFTER obtaining circlet
+* fixed light factor of stealth system not respecting light being disabled
+
 # 1.1.5
 * fixed circlet making other tools not draining durability
 

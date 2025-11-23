@@ -955,4 +955,17 @@ namespace CircletExtended
     {
         private static bool Prefix(Player __instance) => string.IsNullOrWhiteSpace(overloadEmote.Value) || !DvergerLightController.IsInOverload(__instance);
     }
+
+    [HarmonyPatch(typeof(StealthSystem), nameof(StealthSystem.GetLightLevel))]
+    public static class StealthSystem_GetLightLevel_HideDisabledLightSources
+    {
+        private static void Prefix(StealthSystem __instance)
+        {
+            if (Time.time - __instance.m_lastLightListUpdate > 1f)
+            {
+                __instance.m_lastLightListUpdate = Time.time;
+                __instance.m_allLights = Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Where(light => light.enabled).ToArray();
+            }
+        }
+    }
 }
