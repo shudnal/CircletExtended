@@ -18,7 +18,7 @@ namespace CircletExtended
     {
         public const string pluginID = "shudnal.CircletExtended";
         public const string pluginName = "Circlet Extended";
-        public const string pluginVersion = "1.1.6";
+        public const string pluginVersion = "1.1.7";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -146,23 +146,16 @@ namespace CircletExtended
 
         private void Awake()
         {
-            harmony.PatchAll();
-
             instance = this;
 
             ConfigInit();
             _ = configSync.AddLockingConfigEntry(configLocked);
 
+            harmony.PatchAll();
+
             Game.isModded = true;
 
-            if (itemSlotAzuEPI.Value && AzuExtendedPlayerInventory.API.IsLoaded())
-                AzuExtendedPlayerInventory.API.AddSlot(itemSlotNameAzuEPI.Value, player => player.GetCirclet(), item => CircletItem.IsCircletItem(item), itemSlotIndexAzuEPI.Value);
-
-            if (ExtraSlotsAPI.API.IsReady())
-                if (itemSlotIndexExtraSlots.Value < 0)
-                    ExtraSlotsAPI.API.AddSlotBefore("CircletExtended", () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => CircletItem.IsCircletSlotAvailable(), "HipLantern");
-                else
-                    ExtraSlotsAPI.API.AddSlotWithIndex("CircletExtended", itemSlotIndexExtraSlots.Value, () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => CircletItem.IsCircletSlotAvailable());
+            UpdateCustomEquipSlot();
         }
 
         private void OnDestroy()
@@ -242,16 +235,21 @@ namespace CircletExtended
             visualStateArmorStand = config("Circlet - Visual state", "Enable armor stand state", defaultValue: true, "Circlet put on the armor stand will preserve light state");
 
             itemSlotType = config("Circlet - Custom slot", "Slot type", defaultValue: 55, "Custom item slot type. Change it only if you have issues with other mods compatibility. Game restart is recommended after change.");
-            itemSlotAzuEPI = config("Circlet - Custom slot", "AzuEPI - Create slot", defaultValue: false, "Create custom equipment slot with AzuExtendedPlayerInventory. Game restart is required to apply changes.");
-            itemSlotNameAzuEPI = config("Circlet - Custom slot", "AzuEPI - Slot name", defaultValue: "Circlet", "Custom equipment slot name. Game restart is required to apply changes.");
-            itemSlotIndexAzuEPI = config("Circlet - Custom slot", "AzuEPI - Slot index", defaultValue: -1, "Slot index (position). Game restart is required to apply changes.");
-            itemSlotExtraSlots = config("Circlet - Custom slot", "ExtraSlots - Create slot", defaultValue: false, "Create custom equipment slot with ExtraSlots.");
-            itemSlotNameExtraSlots = config("Circlet - Custom slot", "ExtraSlots - Slot name", defaultValue: "Circlet", "Custom equipment slot name.");
-            itemSlotIndexExtraSlots = config("Circlet - Custom slot", "ExtraSlots - Slot index", defaultValue: -1, "Slot index (position). Game restart is required to apply changes.");
-            itemSlotExtraSlotsDiscovery = config("Circlet - Custom slot", "ExtraSlots - Available after discovery", defaultValue: true, "If enabled - slot will be active only if you know circlet item.");
 
             itemSlotType.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
-            itemSlotExtraSlots.SettingChanged += (s, e) => ExtraSlotsAPI.API.UpdateSlots();
+
+            itemSlotAzuEPI = config("Circlet - Custom slot", "AzuEPI - Create slot", defaultValue: false, "Create custom equipment slot with AzuExtendedPlayerInventory. Slot will be created/removed on config change.");
+            itemSlotNameAzuEPI = config("Circlet - Custom slot", "AzuEPI - Slot name", defaultValue: "Circlet", "Custom equipment slot name. Game restart is required to apply changes.");
+            itemSlotIndexAzuEPI = config("Circlet - Custom slot", "AzuEPI - Slot index", defaultValue: -1, "Slot index (position). Remove and add slot to apply changes.");
+
+            itemSlotAzuEPI.SettingChanged += (s, e) => UpdateCustomEquipSlot();
+
+            itemSlotExtraSlots = config("Circlet - Custom slot", "ExtraSlots - Create slot", defaultValue: false, "Create custom equipment slot with ExtraSlots. Slot will be created/removed on config change.");
+            itemSlotNameExtraSlots = config("Circlet - Custom slot", "ExtraSlots - Slot name", defaultValue: "Circlet", "Custom equipment slot name.");
+            itemSlotIndexExtraSlots = config("Circlet - Custom slot", "ExtraSlots - Slot index", defaultValue: -1, "Slot index (position). Remove and add slot to apply changes.");
+            itemSlotExtraSlotsDiscovery = config("Circlet - Custom slot", "ExtraSlots - Available after discovery", defaultValue: true, "If enabled - slot will be active only if you know circlet item.");
+
+            itemSlotExtraSlots.SettingChanged += (s, e) => { UpdateCustomEquipSlot(); ExtraSlotsAPI.API.UpdateSlots(); };
 
             widenShortcut = config("Hotkeys", "Beam widen", defaultValue: new KeyboardShortcut(KeyCode.RightArrow), "Widen beam shortcut. [Not Synced with Server]", false);
             narrowShortcut = config("Hotkeys", "Beam narrow", defaultValue: new KeyboardShortcut(KeyCode.LeftArrow), "Narrow beam shortcut. [Not Synced with Server]", false);
@@ -330,6 +328,33 @@ namespace CircletExtended
             FillShortcuts();
 
             FillHelmets();
+        }
+
+        public static void UpdateCustomEquipSlot()
+        {
+            if (AzuExtendedPlayerInventory.API.IsLoaded())
+            {
+                bool hasSlot = AzuExtendedPlayerInventory.API.GetSlots().SlotNames.Any(slotName => slotName == itemSlotNameAzuEPI.Value);
+                if (hasSlot && !itemSlotAzuEPI.Value)
+                    AzuExtendedPlayerInventory.API.RemoveSlot(itemSlotNameAzuEPI.Value);
+                else if (!hasSlot && itemSlotAzuEPI.Value)
+                    AzuExtendedPlayerInventory.API.AddSlot(itemSlotNameAzuEPI.Value, player => player.GetCirclet(), item => CircletItem.IsCircletItem(item), itemSlotIndexAzuEPI.Value);
+            }
+            else if (ExtraSlotsAPI.API.IsReady())
+            {
+                bool hasSlot = ExtraSlotsAPI.API.FindSlot("CircletExtended") != null;
+                if (!hasSlot && itemSlotExtraSlots.Value)
+                {
+                    if (itemSlotIndexExtraSlots.Value < 0)
+                        ExtraSlotsAPI.API.AddSlotBefore("CircletExtended", () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => CircletItem.IsCircletSlotAvailable(), "HipLantern");
+                    else
+                        ExtraSlotsAPI.API.AddSlotWithIndex("CircletExtended", itemSlotIndexExtraSlots.Value, () => itemSlotNameExtraSlots.Value, item => CircletItem.IsCircletItem(item), () => CircletItem.IsCircletSlotAvailable());
+                }
+                else if (hasSlot && !itemSlotExtraSlots.Value)
+                {
+                    ExtraSlotsAPI.API.RemoveSlot("CircletExtended");
+                }
+            }
         }
 
         private void FillShortcuts()

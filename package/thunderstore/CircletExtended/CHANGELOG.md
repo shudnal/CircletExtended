@@ -1,3 +1,6 @@
+# 1.1.7
+* custom slots for AzuEPI and ExtraSlots can now be dynamically enabled and disabled (this also fixes the issue when slot is disabled on a client and enabled on a server)
+
 # 1.1.6
 * fixed circlet not appearing in upgrade and craft menu if mod is installed AFTER obtaining circlet
 * fixed light factor of stealth system not respecting light being disabled
