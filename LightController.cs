@@ -180,7 +180,7 @@ namespace CircletExtended
         {
             Player player = m_playerAttached;
             if (player != null && m_state.demister && player.GetSEMan().GetStatusEffect(demisterEffectHash) != null 
-                    && (player.m_utilityItem == null || player.m_utilityItem.m_shared.m_name != "$item_demister"))
+                    && (!player.GetInventory().GetEquippedItems().Any(item => item.m_shared.m_equipStatusEffect?.NameHash() == demisterEffectHash && !CircletItem.IsCircletItem(item))))
                 player.GetSEMan().RemoveStatusEffect(demisterEffectHash);
         }
 
