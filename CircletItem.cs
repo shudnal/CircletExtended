@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using static CircletExtended.CircletExtended;
 
@@ -21,6 +22,10 @@ namespace CircletExtended
         public static bool helmetListFilled = false;
 
         public const int maxQuality = 4;
+
+        public static Recipe recipe;
+        
+        public static Dictionary<int, Piece.Requirement[]> recipeRequirements = new Dictionary<int, Piece.Requirement[]>();
 
         public static void UpdateCompatibleHelmetLists()
         {
@@ -164,7 +169,7 @@ namespace CircletExtended
                 return;
 
             if (ObjectDB.instance.m_recipes.RemoveAll(x => IsCircletItemName(x.name)) > 0)
-                LogInfo($"Removed recipe {itemNameHelmetDverger}");
+                LogInfo($"Recipe removed {itemNameHelmetDverger}");
 
             circletPrefab = ObjectDB.instance.GetItemPrefab(itemHashHelmetDverger);
             if (circletPrefab == null)
@@ -173,26 +178,29 @@ namespace CircletExtended
             ItemDrop item = circletPrefab.GetComponent<ItemDrop>();
             PatchCircletItemData(item.m_itemData, inventoryItemUpdate: false);
 
-            if (!getFeaturesByUpgrade.Value)
-                return;
+            if (recipe != null)
+                UnityEngine.Object.Destroy(recipe);
 
             FillRecipeRequirements();
 
-            CraftingStation station = ObjectDB.instance.m_recipes.FirstOrDefault(rec => rec.m_craftingStation?.m_name == "$piece_forge")?.m_craftingStation;
-
-            Recipe recipe = ScriptableObject.CreateInstance<Recipe>();
+            CraftingStation forge = ObjectDB.instance.m_recipes.FirstOrDefault(rec => rec.m_craftingStation?.m_name == "$piece_forge")?.m_craftingStation;
+            CraftingStation craftingStation = ObjectDB.instance.m_recipes.FirstOrDefault(rec => rec.m_craftingStation?.m_name == circletRecipeCraftingStation.Value)?.m_craftingStation;
+            CraftingStation repairStation = ObjectDB.instance.m_recipes.FirstOrDefault(rec => rec.m_craftingStation?.m_name == circletRecipeRepairStation.Value)?.m_craftingStation;
+            
+            recipe = ScriptableObject.CreateInstance<Recipe>();
             recipe.name = itemNameHelmetDverger;
             recipe.m_amount = 1;
-            recipe.m_minStationLevel = 3;
+            recipe.m_minStationLevel = Math.Min(circletRecipeCraftingStationLvl.Value, circletRecipeRepairStationLvl.Value); // Actual crafting level is overriden
             recipe.m_item = item;
             recipe.m_enabled = true;
 
-            if (station != null)
-                recipe.m_craftingStation = station;
+            recipe.m_craftingStation = craftingStation ?? forge;
+            recipe.m_repairStation = repairStation ?? null;
 
             recipe.m_resources = recipeRequirements[1];
 
             ObjectDB.instance.m_recipes.Add(recipe);
+            LogInfo($"Recipe added {itemNameHelmetDverger}");
         }
 
         private static void FillRecipeRequirements()
@@ -242,10 +250,15 @@ namespace CircletExtended
             return requirements.ToArray();
         }
 
-        [HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.Awake))]
-        public static class ObjectDB_Awake_CircletStats
+        [HarmonyPatch]
+        private static class ObjectDB_Awake_CircletStats
         {
-            [HarmonyPriority(Priority.Last)]
+            private static IEnumerable<MethodInfo> TargetMethods() => new[]
+            {
+                AccessTools.DeclaredMethod(typeof(ObjectDB), nameof(ObjectDB.Awake)),
+                AccessTools.DeclaredMethod(typeof(ObjectDB), nameof(ObjectDB.CopyOtherDB)),
+            };
+
             private static void Postfix()
             {
                 DvergerLightController.RegisterEffects();
@@ -518,13 +531,23 @@ namespace CircletExtended
             }
         }
 
-        [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.CanRepair))]
-        public static class InventoryGui_CanRepair_PatchCirclets
+        [HarmonyPatch(typeof(Recipe), nameof(Recipe.GetRequiredStationLevel))]
+        public static class Recipe_GetRequiredStationLevel_CraftingStationLevel
         {
-            private static void Postfix(ItemDrop.ItemData item, ref bool __result)
+            private static void Prefix(Recipe __instance, ref int __state)
             {
-                if (Player.m_localPlayer != null && IsCircletItemData(item) && UseFuel())
-                    __result = true;
+                __state = -1;
+                if (__instance != recipe)
+                    return;
+
+                __state = __instance.m_minStationLevel;
+                __instance.m_minStationLevel = circletRecipeCraftingStationLvl.Value;
+            }
+
+            private static void Postfix(Recipe __instance, int __state)
+            {
+                if (__state != -1)
+                    __instance.m_minStationLevel = __state;
             }
         }
 
@@ -551,6 +574,17 @@ namespace CircletExtended
                     return;
 
                 PatchCircletItemData(item);
+            }
+        }
+
+        [HarmonyPatch(typeof(Player), nameof(Player.GetAvailableRecipes))]
+        public static class Player_GetAvailableRecipes_RemoveUncraftableRecipe
+        {
+            [HarmonyPriority(Priority.First)]
+            private static void Postfix(Player __instance, ref List<Recipe> available)
+            {
+                if (!circletRecipeCraftingEnabled.Value)
+                    available.RemoveAll(rec => rec == recipe);
             }
         }
     }

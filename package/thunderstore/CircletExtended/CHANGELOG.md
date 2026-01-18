@@ -1,3 +1,7 @@
+# 1.1.8
+* fixed the issue where circlet can be repaired at literally any crafting station
+* more detailed configs for circlet crafting and repairing
+
 # 1.1.7
 * custom slots for AzuEPI and ExtraSlots can now be dynamically enabled and disabled (this also fixes the issue when slot is disabled on a client and enabled on a server)
 

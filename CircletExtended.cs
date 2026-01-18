@@ -18,7 +18,7 @@ namespace CircletExtended
     {
         public const string pluginID = "shudnal.CircletExtended";
         public const string pluginName = "Circlet Extended";
-        public const string pluginVersion = "1.1.7";
+        public const string pluginVersion = "1.1.8";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -62,6 +62,12 @@ namespace CircletExtended
         public static ConfigEntry<bool> visualStateItemDrop;
         public static ConfigEntry<bool> visualStateItemStand;
         public static ConfigEntry<bool> visualStateArmorStand;
+
+        public static ConfigEntry<bool> circletRecipeCraftingEnabled;
+        public static ConfigEntry<string> circletRecipeCraftingStation;
+        public static ConfigEntry<string> circletRecipeRepairStation;
+        public static ConfigEntry<int> circletRecipeCraftingStationLvl;
+        public static ConfigEntry<int> circletRecipeRepairStationLvl;
 
         public static ConfigEntry<string> circletRecipeQuality1;
         public static ConfigEntry<string> circletRecipeQuality2;
@@ -136,8 +142,6 @@ namespace CircletExtended
 
         public static List<int> hotkeys = new List<int>();
 
-        public static Dictionary<int, Piece.Requirement[]> recipeRequirements = new Dictionary<int, Piece.Requirement[]>();
-
         public static HashSet<int> equipWithHelmetsList = new HashSet<int>();
 
         public static string customDataKey = $"{pluginID}.DvergerLightState";
@@ -196,8 +200,8 @@ namespace CircletExtended
             enablePutOnTop.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
             enableSpotLight.SettingChanged += (sender, args) => DvergerLightController.UpdateSpotLights();
 
-            fuelMinutes = config("Circlet - Fuel", "Basic fuel capacity", defaultValue: 120, "Time in minutes required to consume all fuel. Set to 0 to not consume fuel.");
-            fuelPerLevel = config("Circlet - Fuel", "Fuel per level", defaultValue: 60, "Time in minutes added per quality level");
+            fuelMinutes = config("Circlet - Fuel", "Basic fuel capacity", defaultValue: 60, "Time in minutes required to consume all fuel. Set to 0 to not consume fuel.");
+            fuelPerLevel = config("Circlet - Fuel", "Fuel per level", defaultValue: 20, "Time in minutes added per quality level");
 
             fuelMinutes.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
             fuelPerLevel.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
@@ -213,6 +217,18 @@ namespace CircletExtended
                                                                                                                                      "\nThere is only Troll Leather Helmet of Vanilla helmets that looks good with Circlet.");
 
             equipCircletWithHelmet.SettingChanged += (sender, args) => FillHelmets();
+
+            circletRecipeCraftingEnabled = config("Circlet - Crafting", "Crafting enabled", defaultValue: true, "Enabled recipe to craft circlet.");
+            circletRecipeCraftingStation = config("Circlet - Crafting", "Crafting station", defaultValue: "$piece_forge", "Where to craft circet. Leave empty to disable crafting but set repair station.");
+            circletRecipeRepairStation = config("Circlet - Crafting", "Repair station", defaultValue: "$piece_forge", "Additional station where circet can be repaired. Crafting station is always used as well if set.");
+            circletRecipeCraftingStationLvl = config("Circlet - Crafting", "Crafting station lvl", defaultValue: 3, "Level of crafting station required");
+            circletRecipeRepairStationLvl = config("Circlet - Crafting", "Repair station lvl", defaultValue: 1, "Level of repair station required.");
+
+            circletRecipeCraftingEnabled.SettingChanged += (sender, args) => CircletItem.FillRecipe();
+            circletRecipeCraftingStation.SettingChanged += (sender, args) => CircletItem.FillRecipe();
+            circletRecipeRepairStation.SettingChanged += (sender, args) => CircletItem.FillRecipe();
+            circletRecipeCraftingStationLvl.SettingChanged += (sender, args) => CircletItem.FillRecipe();
+            circletRecipeRepairStationLvl.SettingChanged += (sender, args) => CircletItem.FillRecipe();
 
             circletRecipeQuality1 = config("Circlet - Recipe", "Create", defaultValue: "Bronze:10,Ruby:1,SilverNecklace:1,SurtlingCore:10", "Recipe to create circet");
             circletRecipeQuality2 = config("Circlet - Recipe", "Upgrade quality 2", defaultValue: "Resin:20,LeatherScraps:10,IronNails:10,Chain:1", "Recipe to upgrade circet to quality 2");
