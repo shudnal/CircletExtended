@@ -1,3 +1,7 @@
+# 1.1.9
+* circlet drain depends on intensity (configurable factor for min and max intensity)
+* fixed error on logout
+
 # 1.1.8
 * fixed the issue where circlet can be repaired at literally any crafting station
 * more detailed configs for circlet crafting and repairing

@@ -726,6 +726,8 @@ namespace CircletExtended
 
         public static bool IsCircletLightEnabled(ItemDrop.ItemData item) => item != null && itemState.ContainsKey(item) && itemState[item].on;
 
+        public static float GetCircletDrainMultiplier(ItemDrop.ItemData item) => item == null || !itemState.TryGetValue(item, out LightState state) || !state.on ? 0f : IntensityToFactor(state.intensity);
+
         public static void UpdateSpotLights() => Instances.Do(controller => controller.UpdateSpotLight());
 
         public static void UpdateQualityLevels() => Instances.Do(controller => controller.UpdateQualityLevel());
@@ -774,6 +776,20 @@ namespace CircletExtended
                 ZNetScene.instance.m_prefabs.Add(overloadEffect);
                 ZNetScene.instance.m_namedPrefabs.Add(overloadItemHash, overloadEffect);
             }
+        }
+
+        private static float IntensityToFactor(int intensity)
+        {
+            if (intensity <= 50)
+                return fuelDrainMinIntensityFactor.Value;
+
+            if (intensity <= 100)
+                return Mathf.Lerp(fuelDrainMinIntensityFactor.Value, 1f, intensity / 100f);
+
+            if (intensity <= 150)
+                return Mathf.Lerp(1f, fuelDrainMaxIntensityFactor.Value, (intensity - 100f) / 50f);
+
+            return fuelDrainMaxIntensityFactor.Value;
         }
     }
 

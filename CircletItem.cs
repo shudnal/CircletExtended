@@ -168,7 +168,7 @@ namespace CircletExtended
             if (!ObjectDB.instance)
                 return;
 
-            if (ObjectDB.instance.m_recipes.RemoveAll(x => IsCircletItemName(x.name)) > 0)
+            if (ObjectDB.instance.m_recipes.RemoveAll(x => x is Recipe recipe && IsCircletItemName(recipe.name)) > 0)
                 LogInfo($"Recipe removed {itemNameHelmetDverger}");
 
             circletPrefab = ObjectDB.instance.GetItemPrefab(itemHashHelmetDverger);
@@ -250,15 +250,9 @@ namespace CircletExtended
             return requirements.ToArray();
         }
 
-        [HarmonyPatch]
-        private static class ObjectDB_Awake_CircletStats
+        [HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.Awake))]
+        public static class ObjectDB_Awake_CircletStats
         {
-            private static IEnumerable<MethodInfo> TargetMethods() => new[]
-            {
-                AccessTools.DeclaredMethod(typeof(ObjectDB), nameof(ObjectDB.Awake)),
-                AccessTools.DeclaredMethod(typeof(ObjectDB), nameof(ObjectDB.CopyOtherDB)),
-            };
-
             private static void Postfix()
             {
                 DvergerLightController.RegisterEffects();
@@ -477,7 +471,7 @@ namespace CircletExtended
             public static void Postfix(Humanoid __instance, float dt)
             {
                 if (__instance.IsPlayer() && __instance.GetCirclet() is ItemDrop.ItemData circlet && circlet != __instance.m_helmetItem)
-                    __instance.DrainEquipedItemDurability(circlet, dt);
+                    __instance.DrainEquipedItemDurability(circlet, dt * DvergerLightController.GetCircletDrainMultiplier(circlet));
             }
         }
 

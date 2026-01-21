@@ -18,7 +18,7 @@ namespace CircletExtended
     {
         public const string pluginID = "shudnal.CircletExtended";
         public const string pluginName = "Circlet Extended";
-        public const string pluginVersion = "1.1.8";
+        public const string pluginVersion = "1.1.9";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -49,6 +49,8 @@ namespace CircletExtended
 
         public static ConfigEntry<int> fuelMinutes;
         public static ConfigEntry<int> fuelPerLevel;
+        public static ConfigEntry<float> fuelDrainMinIntensityFactor;
+        public static ConfigEntry<float> fuelDrainMaxIntensityFactor;
 
         public static ConfigEntry<Color> circletColor;
 
@@ -202,6 +204,8 @@ namespace CircletExtended
 
             fuelMinutes = config("Circlet - Fuel", "Basic fuel capacity", defaultValue: 60, "Time in minutes required to consume all fuel. Set to 0 to not consume fuel.");
             fuelPerLevel = config("Circlet - Fuel", "Fuel per level", defaultValue: 20, "Time in minutes added per quality level");
+            fuelDrainMinIntensityFactor = config("Circlet - Fuel", "Fuel drain min intensity factor", defaultValue: 0.25f, new ConfigDescription("Factor of fuel drain when intensity is at minimum", new AcceptableValueRange<float>(0f, 1f)));
+            fuelDrainMaxIntensityFactor = config("Circlet - Fuel", "Fuel drain max intensity factor", defaultValue: 3f, new ConfigDescription("Factor of fuel drain when intensity is at maximum", new AcceptableValueRange<float>(1f, 5f)));
 
             fuelMinutes.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
             fuelPerLevel.SettingChanged += (sender, args) => CircletItem.PatchCircletItemOnConfigChange();
