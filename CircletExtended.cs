@@ -1,11 +1,12 @@
-﻿using System.Linq;
-using System.Collections.Generic;
-using BepInEx;
+﻿using BepInEx;
+using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using HarmonyLib;
-using UnityEngine;
 using ServerSync;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 namespace CircletExtended
 {
@@ -360,7 +361,7 @@ namespace CircletExtended
                 else if (!hasSlot && itemSlotAzuEPI.Value)
                     AzuExtendedPlayerInventory.API.AddSlot(itemSlotNameAzuEPI.Value, player => player.GetCirclet(), item => CircletItem.IsCircletItem(item), itemSlotIndexAzuEPI.Value);
             }
-            else if (ExtraSlotsAPI.API.IsReady())
+            else if (ExtraSlotsAPI.API.IsReady() && !Chainloader.PluginInfos.ContainsKey("shudnal.ExtraSlotsCustomSlots"))
             {
                 bool hasSlot = ExtraSlotsAPI.API.FindSlot("CircletExtended") != null;
                 if (!hasSlot && itemSlotExtraSlots.Value)
