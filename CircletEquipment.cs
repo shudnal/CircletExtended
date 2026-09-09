@@ -44,8 +44,8 @@ namespace CircletExtended
                 }
                 else
                 {
-                    string circletName = itemData == null ? (__instance.m_helmetItem != null ? __instance.m_helmetItem.m_dropPrefab.name : "") : itemData.m_dropPrefab.name;
-                    visEq.SetHelmetItem(circletName);
+                    int circletHash = itemData == null ? (__instance.m_helmetItem != null ? __instance.m_helmetItem.m_dropPrefab.name.GetStableHashCode() : 0) : itemData.m_dropPrefab.name.GetStableHashCode();
+                    visEq.SetHelmetItem(circletHash);
                 }
             }
         }

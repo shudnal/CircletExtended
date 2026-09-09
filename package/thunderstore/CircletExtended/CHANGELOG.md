@@ -1,3 +1,9 @@
+# 1.1.10
+* Updated for the Valheim 1.0.7 release.
+* Completed the migration to the standalone ConditionalConfigSync dependency.
+* Updated required dependencies to BepInExPack Valheim 5.4.2350 and ConditionalConfigSync 1.0.5.
+* Fixed circlet light initialization on item stands after visual replacement or orientation changes.
+
 # 1.1.9
 * circlet drain depends on intensity (configurable factor for min and max intensity)
 * fixed error on logout

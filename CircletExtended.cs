@@ -2,7 +2,7 @@
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using HarmonyLib;
-using ServerSync;
+using ConditionalConfigSync;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +11,7 @@ using UnityEngine;
 namespace CircletExtended
 {
     [BepInPlugin(pluginID, pluginName, pluginVersion)]
+    [BepInDependency("_shudnal.ConditionalConfigSync", "1.0.5")]
     [BepInIncompatibility("randyknapp.mods.dvergercolor")]
     [BepInIncompatibility("Azumatt.CircletDemister")]
     [BepInDependency("Azumatt.AzuExtendedPlayerInventory", BepInDependency.DependencyFlags.SoftDependency)]
@@ -19,7 +20,7 @@ namespace CircletExtended
     {
         public const string pluginID = "shudnal.CircletExtended";
         public const string pluginName = "Circlet Extended";
-        public const string pluginVersion = "1.1.9";
+        public const string pluginVersion = "1.1.10";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -180,7 +181,6 @@ namespace CircletExtended
 
         public void ConfigInit()
         {
-            config("General", "NexusID", 2617, "Nexus mod ID for updates", false);
 
             configLocked = config("General", "Lock Configuration", defaultValue: true, "Configuration is locked and can be changed by server admins only.");
             loggingEnabled = config("General", "Logging enabled", defaultValue: false, "Enable logging. [Not Synced with Server]", false);
@@ -217,7 +217,8 @@ namespace CircletExtended
 
             equipCircletUnderHelmet = config("Circlet - Put on top", "Equip under helmet", defaultValue: true, "If enabled - Circlet will be invisible if put on top of the helmet." +
                                                                                                                "\nIf disabled - Circlet will replace helmet");
-            equipCircletWithHelmet = config("Circlet - Put on top", "Show when helmet equipped", defaultValue: "HelmetTrollLeather", "Comma separated list. If you have \"Equip under helmet\" enabled and wear a helmet from that list the Circlet will be shown." +
+            equipCircletWithHelmet = config("Circlet - Put on top", "Show when helmet equipped", defaultValue: "HelmetTrollLeather,HelmetStrawHat,HelmetHat10,HelmetHat9,HelmetHat8,HelmetHat7,HelmetHat6,HelmetHat5,HelmetHat4,HelmetHat3,HelmetHat2,HelmetHat1,HelmetFishingHat", 
+                                                                                                                                     "Comma separated list. If you have \"Equip under helmet\" enabled and wear a helmet from that list the Circlet will be shown." +
                                                                                                                                      "\nAdd identifier \"" + allHelmetsString + "\" to show circlet with every helmet equiped. Use that to test how it looks with different helmets." +
                                                                                                                                      "\nThere is only Troll Leather Helmet of Vanilla helmets that looks good with Circlet.");
 
@@ -409,8 +410,7 @@ namespace CircletExtended
         {
             ConfigEntry<T> configEntry = Config.Bind(group, name, defaultValue, description);
 
-            SyncedConfigEntry<T> syncedConfigEntry = configSync.AddConfigEntry(configEntry);
-            syncedConfigEntry.SynchronizedConfig = synchronizedSetting;
+            configSync.AddConfigEntry(configEntry, ConfigSyncMode.Conditional, serverControlledByDefault: synchronizedSetting);
 
             return configEntry;
         }

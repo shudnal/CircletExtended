@@ -96,6 +96,11 @@ namespace CircletExtended
             return name == itemNameHelmetDverger;
         }
 
+        internal static bool IsCircletItem(int hash)
+        {
+            return hash == itemHashHelmetDverger;
+        }
+
         public static bool IsCircletSlotKnown()
         {
             if (!Player.m_localPlayer || Player.m_localPlayer.m_isLoading)
@@ -305,7 +310,16 @@ namespace CircletExtended
             }
         }
 
-        [HarmonyPatch(typeof(Inventory), nameof(Inventory.Load))]
+        [HarmonyPatch(typeof(Inventory), nameof(Inventory.Load), new[] { typeof(ZPackage), typeof(bool) } )]
+        public static class Inventory_Load_New_CircletStats
+        {
+            public static void Postfix(Inventory __instance)
+            {
+                PatchInventory(__instance);
+            }
+        }
+
+        [HarmonyPatch(typeof(Inventory), nameof(Inventory.Load), new[] { typeof(ZPackage) })]
         public static class Inventory_Load_CircletStats
         {
             public static void Postfix(Inventory __instance)
@@ -499,7 +513,7 @@ namespace CircletExtended
             }
         }
 
-        [HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetTooltip), typeof(ItemDrop.ItemData), typeof(int), typeof(bool), typeof(float), typeof(int))]
+        [HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetTooltip), typeof(ItemDrop.ItemData), typeof(int), typeof(bool), typeof(float), typeof(int), typeof(bool))]
         private static class ItemDropItemData_GetTooltip_ItemTooltip
         {
             [HarmonyPriority(Priority.Last)]
@@ -554,7 +568,7 @@ namespace CircletExtended
             }
         }
 
-        [HarmonyPatch(typeof(Inventory), nameof(Inventory.AddItem), typeof(ItemDrop.ItemData), typeof(int), typeof(int), typeof(int))]
+        [HarmonyPatch(typeof(Inventory), nameof(Inventory.AddItem), typeof(ItemDrop.ItemData), typeof(int), typeof(int), typeof(int), typeof(bool))]
         private static class Inventory_AddItem_ItemData_amount_x_y_PatchCircletItemDataOnLoad
         {
             [HarmonyPriority(Priority.First)]

@@ -302,7 +302,7 @@ namespace CircletExtended
 
             if (player.InWater())
             {
-                player.AddLightningDamage(5f);
+                player.AddLightningDamage(5f, -1);
                 player.AddStaggerDamage(player.GetStaggerTreshold() + 1f, -player.transform.forward, null);
             }
 
@@ -536,7 +536,7 @@ namespace CircletExtended
 
                 if (string.IsNullOrWhiteSpace(stateJSON))
                 {
-                    ItemDrop.LoadFromZDO(m_zdoIndex, item, zdo);
+                    ItemDrop.LoadFromZDO(item, zdo, m_zdoIndex);
                     stateJSON = item.m_customData.GetValueSafe(customDataKey);
                     
                     LogInfo($"Loading state from zdo index {m_zdoIndex}: {stateJSON}");
@@ -857,48 +857,29 @@ namespace CircletExtended
     [HarmonyPatch(typeof(ItemStand), nameof(ItemStand.SetVisualItem))]
     public static class ItemStand_SetVisualItem_ItemStandAttachment
     {
-        private static void Prefix(ItemStand __instance, GameObject ___m_visualItem, string ___m_visualName, int ___m_visualVariant, string itemName, int variant, ref bool __state)
+        private static void Postfix(ItemStand __instance)
         {
-            if (!visualStateItemStand.Value)
+            if (!visualStateItemStand.Value || __instance.m_nview?.IsValid() != true || __instance.m_visualItem == null)
                 return;
 
-            if (__instance.m_nview?.IsValid() != true)
+            if (!CircletItem.IsCircletItem(__instance.m_visualHash))
                 return;
 
-            if (!CircletItem.IsCircletItemName(__instance.GetAttachedItem()))
+            if (__instance.m_visualItem.GetComponentInChildren<DvergerLightController>(includeInactive: true) != null)
                 return;
 
-            if (___m_visualItem != null)
-                return;
-
-            if (___m_visualName == itemName && ___m_visualVariant == variant)
-                return;
-
-            __state = true;
-        }
-
-        private static void Postfix(GameObject ___m_visualItem, bool __state)
-        {
-            if (!__state)
-                return;
-
-            DvergerLightController component = ___m_visualItem.GetComponentInChildren<DvergerLightController>(includeInactive: true);
-            if (component != null)
-                Object.Destroy(component);
-
-            Light[] lights = ___m_visualItem.GetComponentsInChildren<Light>(includeInactive: true);
+            Light[] lights = __instance.m_visualItem.GetComponentsInChildren<Light>(includeInactive: true);
             if (lights.Length == 0)
                 return;
 
-            ___m_visualItem.AddComponent<DvergerLightController>().Initialize(lights[0]);
+            __instance.m_visualItem.AddComponent<DvergerLightController>().Initialize(lights[0]);
         }
-
     }
 
     [HarmonyPatch(typeof(ArmorStand), nameof(ArmorStand.SetVisualItem))]
     public static class ArmorStand_SetVisualItem_ArmorStandAttachment
     {
-        private static void Prefix(ArmorStand __instance, int index, List<ArmorStand.ArmorStandSlot> ___m_slots, string itemName, int variant, ref bool __state)
+        private static void Prefix(ArmorStand __instance, int index, List<ArmorStand.ArmorStandSlot> ___m_slots, int itemHash, int variant, ref bool __state)
         {
             if (!visualStateArmorStand.Value)
                 return;
@@ -906,7 +887,7 @@ namespace CircletExtended
             if (__instance.m_nview?.IsValid() != true)
                 return;
 
-            if (!CircletItem.IsCircletItemName(itemName))
+            if (!CircletItem.IsCircletItem(itemHash))
                 return;
 
             ArmorStand.ArmorStandSlot armorStandSlot = ___m_slots[index];
@@ -914,7 +895,7 @@ namespace CircletExtended
             if (armorStandSlot.m_slot != VisSlot.Helmet)
                 return;
 
-            if (armorStandSlot.m_visualName == itemName && armorStandSlot.m_visualVariant == variant)
+            if (armorStandSlot.m_visualHash == itemHash && armorStandSlot.m_visualVariant == variant)
                 return;
 
             __state = true;
@@ -928,7 +909,7 @@ namespace CircletExtended
             ___m_visEquipment.UpdateVisuals();
 
             ArmorStand.ArmorStandSlot armorStandSlot = ___m_slots[index];
-            if (!CircletItem.IsCircletItemName(armorStandSlot.m_visualName))
+            if (!CircletItem.IsCircletItem(armorStandSlot.m_visualHash))
                 return;
 
             GameObject visualItem = ___m_visEquipment.m_helmetItemInstance;
