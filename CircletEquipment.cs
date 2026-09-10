@@ -278,6 +278,9 @@ namespace CircletExtended
         {
             private static void Prefix(Inventory __instance)
             {
+                if (__instance.m_temoraryInventory)
+                    return;
+
                 if (__instance != Player.m_localPlayer?.GetInventory())
                     return;
 

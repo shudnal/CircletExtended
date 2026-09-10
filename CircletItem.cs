@@ -315,6 +315,9 @@ namespace CircletExtended
         {
             public static void Postfix(Inventory __instance)
             {
+                if (__instance.m_temoraryInventory)
+                    return;
+
                 PatchInventory(__instance);
             }
         }
@@ -324,6 +327,9 @@ namespace CircletExtended
         {
             public static void Postfix(Inventory __instance)
             {
+                if (__instance.m_temoraryInventory)
+                    return;
+
                 PatchInventory(__instance);
             }
         }
@@ -564,6 +570,9 @@ namespace CircletExtended
         {
             private static void Prefix(Inventory __instance)
             {
+                if (__instance.m_temoraryInventory)
+                    return;
+
                 PatchInventory(__instance);
             }
         }
@@ -573,8 +582,11 @@ namespace CircletExtended
         {
             [HarmonyPriority(Priority.First)]
             [HarmonyBefore("shudnal.ExtraSlots")]
-            private static void Prefix(ItemDrop.ItemData item)
+            private static void Prefix(Inventory __instance, ItemDrop.ItemData item)
             {
+                if (__instance.m_temoraryInventory)
+                    return;
+
                 if (!getFeaturesByUpgrade.Value)
                     return;
 
