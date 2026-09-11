@@ -217,7 +217,7 @@ namespace CircletExtended
 
             equipCircletUnderHelmet = config("Circlet - Put on top", "Equip under helmet", defaultValue: true, "If enabled - Circlet will be invisible if put on top of the helmet." +
                                                                                                                "\nIf disabled - Circlet will replace helmet");
-            equipCircletWithHelmet = config("Circlet - Put on top", "Show when helmet equipped", defaultValue: "HelmetTrollLeather,HelmetStrawHat,HelmetHat10,HelmetHat9,HelmetHat8,HelmetHat7,HelmetHat6,HelmetHat5,HelmetHat4,HelmetHat3,HelmetHat2,HelmetHat1,HelmetFishingHat", 
+            equipCircletWithHelmet = config("Circlet - Put on top", "Show when helmet equipped", defaultValue: "HelmetTrollLeather,HelmetStrawHat,HelmetHat10,HelmetHat9,HelmetHat8,HelmetHat7,HelmetHat6,HelmetHat5,HelmetHat4,HelmetHat3,HelmetHat2,HelmetHat1,HelmetFishingHat,HelmetRootCrown,HelmetMidsummerCrown", 
                                                                                                                                      "Comma separated list. If you have \"Equip under helmet\" enabled and wear a helmet from that list the Circlet will be shown." +
                                                                                                                                      "\nAdd identifier \"" + allHelmetsString + "\" to show circlet with every helmet equiped. Use that to test how it looks with different helmets." +
                                                                                                                                      "\nThere is only Troll Leather Helmet of Vanilla helmets that looks good with Circlet.");
