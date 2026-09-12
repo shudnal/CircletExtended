@@ -1,3 +1,8 @@
+# 1.1.11
+* Reworked per-quality Circlet upgrade recipes to use the vanilla crafting validation and resource consumption path.
+* Fixed upgraded Circlets being marked as cheated because the mod temporarily enabled no-cost crafting.
+* Fixed Circlet upgrades being possible without the required materials.
+
 # 1.1.10
 * Updated for the Valheim 1.0.7 release.
 * Completed the migration to the standalone ConditionalConfigSync dependency.

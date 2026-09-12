@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 using static CircletExtended.CircletExtended;
 
@@ -26,6 +25,13 @@ namespace CircletExtended
         public static Recipe recipe;
         
         public static Dictionary<int, Piece.Requirement[]> recipeRequirements = new Dictionary<int, Piece.Requirement[]>();
+        private static readonly HashSet<Piece.Requirement> configuredRecipeRequirements = new HashSet<Piece.Requirement>();
+
+        private struct RecipeRequirementsPatchState
+        {
+            public Recipe Recipe;
+            public Piece.Requirement[] Resources;
+        }
 
         public static void UpdateCompatibleHelmetLists()
         {
@@ -211,8 +217,36 @@ namespace CircletExtended
         private static void FillRecipeRequirements()
         {
             recipeRequirements.Clear();
+            configuredRecipeRequirements.Clear();
+
             for (int quality = 0; quality <= 5; quality++)
-                recipeRequirements.Add(quality, GetRequirements(quality));
+            {
+                Piece.Requirement[] requirements = GetRequirements(quality);
+                recipeRequirements.Add(quality, requirements);
+                configuredRecipeRequirements.UnionWith(requirements);
+            }
+        }
+
+        private static bool TryApplyRecipeRequirements(Recipe targetRecipe, int quality, out RecipeRequirementsPatchState state)
+        {
+            state = default;
+
+            if (!getFeaturesByUpgrade.Value || targetRecipe != recipe || quality <= 1)
+                return false;
+
+            if (!recipeRequirements.TryGetValue(quality, out Piece.Requirement[] requirements))
+                return false;
+
+            state.Recipe = targetRecipe;
+            state.Resources = targetRecipe.m_resources;
+            targetRecipe.m_resources = requirements;
+            return true;
+        }
+
+        private static void RestoreRecipeRequirements(RecipeRequirementsPatchState state)
+        {
+            if (state.Recipe != null)
+                state.Recipe.m_resources = state.Resources;
         }
 
         private static string GetRecipe(int quality)
@@ -358,130 +392,112 @@ namespace CircletExtended
                     return;
 
                 if (IsCircletItem(__instance.m_resItem))
+                {
                     __result = qualityLevel > 1 ? 0 : 1;
+                    return;
+                }
+
+                if (configuredRecipeRequirements.Contains(__instance))
+                    __result = __instance.m_amount;
             }
         }
 
         [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.DoCrafting))]
         public static class InventoryGui_DoCrafting_CircletUpgrade
         {
-            private static bool PatchMethod(ItemDrop.ItemData ___m_craftUpgradeItem, Recipe ___m_craftRecipe)
+            private static bool PatchMethod(ItemDrop.ItemData craftUpgradeItem, Recipe craftRecipe)
             {
-                if (!getFeaturesByUpgrade.Value)
-                    return false;
-
-                if (___m_craftRecipe == null || ___m_craftUpgradeItem == null)
-                    return false;
-
-                if (!IsCircletItemData(___m_craftUpgradeItem))
-                    return false;
-
-                return true;
+                return getFeaturesByUpgrade.Value && craftRecipe == recipe && craftUpgradeItem != null && IsCircletItemData(craftUpgradeItem);
             }
 
             [HarmonyPriority(Priority.First)]
-            public static void Prefix(Player player, ref Recipe ___m_craftRecipe, ref KeyValuePair<bool, Piece.Requirement[]> __state, ItemDrop.ItemData ___m_craftUpgradeItem)
+            private static void Prefix(Recipe ___m_craftRecipe, ItemDrop.ItemData ___m_craftUpgradeItem, out RecipeRequirementsPatchState __state)
             {
+                __state = default;
+
                 if (!PatchMethod(___m_craftUpgradeItem, ___m_craftRecipe))
                     return;
 
-                int quality = ___m_craftUpgradeItem.m_quality + 1;
-
-                __state = new KeyValuePair<bool, Piece.Requirement[]>(player.m_noPlacementCost, ___m_craftRecipe.m_resources.ToArray());
-
-                ___m_craftRecipe.m_resources = recipeRequirements[quality].ToArray();
-
-                player.m_noPlacementCost = true;
+                TryApplyRecipeRequirements(___m_craftRecipe, ___m_craftUpgradeItem.m_quality + 1, out __state);
             }
 
             [HarmonyPriority(Priority.Last)]
-            public static void Postfix(Player player, ref Recipe ___m_craftRecipe, KeyValuePair<bool, Piece.Requirement[]> __state, ItemDrop.ItemData ___m_craftUpgradeItem)
+            private static void Postfix(Recipe ___m_craftRecipe, ItemDrop.ItemData ___m_craftUpgradeItem, RecipeRequirementsPatchState __state)
             {
                 if (!PatchMethod(___m_craftUpgradeItem, ___m_craftRecipe))
                     return;
 
-                player.m_noPlacementCost = __state.Key;
-                if (!player.m_noPlacementCost)
-                    player.ConsumeResources(___m_craftRecipe.m_resources, 1);
-
-                ___m_craftRecipe.m_resources = __state.Value.ToArray();
-
+                RestoreRecipeRequirements(__state);
                 PatchCircletItemData(___m_craftUpgradeItem, inventoryItemUpdate: false);
+            }
+
+            [HarmonyPriority(Priority.Last)]
+            private static Exception Finalizer(Exception __exception, RecipeRequirementsPatchState __state)
+            {
+                if (__exception != null)
+                    RestoreRecipeRequirements(__state);
+
+                return __exception;
             }
         }
 
         [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.SetupRequirementList))]
         public static class InventoryGui_SetupRequirementList_CircletUpgrade
         {
-            private static bool PatchMethod(KeyValuePair<Recipe, ItemDrop.ItemData> ___m_selectedRecipe)
-            {
-                if (!getFeaturesByUpgrade.Value)
-                    return false;
-
-                return IsCircletItem(___m_selectedRecipe.Key.m_item);
-            }
-
             [HarmonyPriority(Priority.First)]
-            public static void Prefix(ref int quality, ref KeyValuePair<Recipe, ItemDrop.ItemData> ___m_selectedRecipe, ref KeyValuePair<int, Piece.Requirement[]> __state)
+            private static void Prefix(int quality, InventoryGui.RecipeDataPair ___m_selectedRecipe, out RecipeRequirementsPatchState __state)
             {
-                if (!PatchMethod(___m_selectedRecipe))
+                __state = default;
+
+                if (___m_selectedRecipe.Recipe != recipe)
                     return;
 
-                __state = new KeyValuePair<int, Piece.Requirement[]>(quality, ___m_selectedRecipe.Key.m_resources.ToArray());
-
-                ___m_selectedRecipe.Key.m_resources = recipeRequirements[quality].ToArray();
-
-                quality = 1;
+                TryApplyRecipeRequirements(___m_selectedRecipe.Recipe, quality, out __state);
             }
 
             [HarmonyPriority(Priority.Last)]
-            public static void Postfix(ref int quality, ref KeyValuePair<Recipe, ItemDrop.ItemData> ___m_selectedRecipe, KeyValuePair<int, Piece.Requirement[]> __state)
+            private static void Postfix(RecipeRequirementsPatchState __state)
             {
-                if (!PatchMethod(___m_selectedRecipe))
-                    return;
+                RestoreRecipeRequirements(__state);
+            }
 
-                ___m_selectedRecipe.Key.m_resources = __state.Value.ToArray();
+            [HarmonyPriority(Priority.Last)]
+            private static Exception Finalizer(Exception __exception, RecipeRequirementsPatchState __state)
+            {
+                if (__exception != null)
+                    RestoreRecipeRequirements(__state);
 
-                quality = __state.Key;
+                return __exception;
             }
         }
 
         [HarmonyPatch(typeof(Player), nameof(Player.HaveRequirementItems))]
         public static class Player_HaveRequirementItems_CircletUpgrade
         {
-            private static bool PatchMethod(bool discover, Recipe piece)
+            [HarmonyPriority(Priority.First)]
+            private static void Prefix(Recipe piece, bool discover, int qualityLevel, out RecipeRequirementsPatchState __state)
             {
-                if (!getFeaturesByUpgrade.Value)
-                    return false;
+                __state = default;
 
                 if (discover)
-                    return false;
-
-                return IsCircletItem(piece.m_item);
-            }
-
-            [HarmonyPriority(Priority.First)]
-            public static void Prefix(ref Recipe piece, bool discover, ref int qualityLevel, ref KeyValuePair<int, Piece.Requirement[]> __state)
-            {
-                if (!PatchMethod(discover, piece))
                     return;
 
-                __state = new KeyValuePair<int, Piece.Requirement[]>(qualityLevel, piece.m_resources.ToArray());
-
-                piece.m_resources = recipeRequirements[qualityLevel].ToArray();
-
-                qualityLevel = 1;
+                TryApplyRecipeRequirements(piece, qualityLevel, out __state);
             }
 
             [HarmonyPriority(Priority.Last)]
-            public static void Postfix(ref Recipe piece, bool discover, ref int qualityLevel, KeyValuePair<int, Piece.Requirement[]> __state)
+            private static void Postfix(RecipeRequirementsPatchState __state)
             {
-                if (!PatchMethod(discover, piece))
-                    return;
+                RestoreRecipeRequirements(__state);
+            }
 
-                piece.m_resources = __state.Value.ToArray();
+            [HarmonyPriority(Priority.Last)]
+            private static Exception Finalizer(Exception __exception, RecipeRequirementsPatchState __state)
+            {
+                if (__exception != null)
+                    RestoreRecipeRequirements(__state);
 
-                qualityLevel = __state.Key;
+                return __exception;
             }
         }
 
