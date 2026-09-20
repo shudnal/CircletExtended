@@ -1,3 +1,7 @@
+# 1.1.12
+* Undiscovered materials in Circlet upgrade recipes are now hidden until the player discovers them.
+* Added a configurable icon tint for undiscovered upgrade requirements.
+
 # 1.1.11
 * Reworked per-quality Circlet upgrade recipes to use the vanilla crafting validation and resource consumption path.
 * Fixed upgraded Circlets being marked as cheated because the mod temporarily enabled no-cost crafting.

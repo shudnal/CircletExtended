@@ -20,7 +20,7 @@ namespace CircletExtended
     {
         public const string pluginID = "shudnal.CircletExtended";
         public const string pluginName = "Circlet Extended";
-        public const string pluginVersion = "1.1.11";
+        public const string pluginVersion = "1.1.12";
 
         private readonly Harmony harmony = new Harmony(pluginID);
 
@@ -77,6 +77,7 @@ namespace CircletExtended
         public static ConfigEntry<string> circletRecipeQuality2;
         public static ConfigEntry<string> circletRecipeQuality3;
         public static ConfigEntry<string> circletRecipeQuality4;
+        public static ConfigEntry<Color> circletUnknownRequirementIconColor;
 
         public static ConfigEntry<string> circletHelmetWhiteList;
         public static ConfigEntry<string> circletHelmetBlackList;
@@ -240,6 +241,7 @@ namespace CircletExtended
             circletRecipeQuality2 = config("Circlet - Recipe", "Upgrade quality 2", defaultValue: "Resin:20,LeatherScraps:10,IronNails:10,Chain:1", "Recipe to upgrade circet to quality 2");
             circletRecipeQuality3 = config("Circlet - Recipe", "Upgrade quality 3", defaultValue: "Thunderstone:5,Silver:1,JuteRed:2", "Recipe to upgrade circet to quality 3");
             circletRecipeQuality4 = config("Circlet - Recipe", "Upgrade quality 4", defaultValue: "Demister:1,BlackCore:1", "Recipe to upgrade circet to quality 4");
+            circletUnknownRequirementIconColor = config("Circlet - Recipe", "Unknown requirement icon color", defaultValue: new Color(0.13f, 0.13f, 0.13f, 0.7f), "Icon color used for undiscovered upgrade recipe requirements.");
 
             circletRecipeQuality1.SettingChanged += (sender, args) => CircletItem.FillRecipe();
             circletRecipeQuality2.SettingChanged += (sender, args) => CircletItem.FillRecipe();
