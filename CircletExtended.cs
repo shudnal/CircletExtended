@@ -241,7 +241,7 @@ namespace CircletExtended
             circletRecipeQuality2 = config("Circlet - Recipe", "Upgrade quality 2", defaultValue: "Resin:20,LeatherScraps:10,IronNails:10,Chain:1", "Recipe to upgrade circet to quality 2");
             circletRecipeQuality3 = config("Circlet - Recipe", "Upgrade quality 3", defaultValue: "Thunderstone:5,Silver:1,JuteRed:2", "Recipe to upgrade circet to quality 3");
             circletRecipeQuality4 = config("Circlet - Recipe", "Upgrade quality 4", defaultValue: "Demister:1,BlackCore:1", "Recipe to upgrade circet to quality 4");
-            circletUnknownRequirementIconColor = config("Circlet - Recipe", "Unknown requirement icon color", defaultValue: (Color)new Color32(0x21, 0x21, 0x21, 0xB1), "Icon color used for undiscovered upgrade recipe requirements. [Not Synced with Server]", false);
+            circletUnknownRequirementIconColor = config("Circlet - Recipe", "Unknown requirement icon color", defaultValue: new Color(0.13f, 0.13f, 0.13f, 0.7f), "Icon color used for undiscovered upgrade recipe requirements.");
 
             circletRecipeQuality1.SettingChanged += (sender, args) => CircletItem.FillRecipe();
             circletRecipeQuality2.SettingChanged += (sender, args) => CircletItem.FillRecipe();
