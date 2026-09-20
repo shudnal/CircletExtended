@@ -471,6 +471,39 @@ namespace CircletExtended
             }
         }
 
+        [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.SetupRequirement))]
+        public static class InventoryGui_SetupRequirement_CircletUnknownRequirement
+        {
+            private static void Postfix(bool __result, Transform elementRoot, Piece.Requirement req, Player player, bool craft, int quality)
+            {
+                if (!__result || !craft || quality <= 1 || !getFeaturesByUpgrade.Value)
+                    return;
+
+                if (req == null || !configuredRecipeRequirements.Contains(req) || !req.m_resItem)
+                    return;
+
+                if (player.IsKnownMaterial(req.m_resItem.m_itemData.m_shared.m_name))
+                    return;
+
+                UnityEngine.UI.Image icon = elementRoot.Find("res_icon")?.GetComponent<UnityEngine.UI.Image>();
+                TMPro.TMP_Text name = elementRoot.Find("res_name")?.GetComponent<TMPro.TMP_Text>();
+                TMPro.TMP_Text amount = elementRoot.Find("res_amount")?.GetComponent<TMPro.TMP_Text>();
+                UITooltip tooltip = elementRoot.GetComponent<UITooltip>();
+
+                if (icon != null)
+                    icon.color = circletUnknownRequirementIconColor.Value;
+
+                if (name != null)
+                    name.text = "???";
+
+                if (amount != null)
+                    amount.text = "???";
+
+                if (tooltip != null)
+                    tooltip.m_text = "";
+            }
+        }
+
         [HarmonyPatch(typeof(Player), nameof(Player.HaveRequirementItems))]
         public static class Player_HaveRequirementItems_CircletUpgrade
         {
