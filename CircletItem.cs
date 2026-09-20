@@ -497,7 +497,10 @@ namespace CircletExtended
                     name.text = "???";
 
                 if (amount != null)
+                {
                     amount.text = "???";
+                    amount.color = Color.white;
+                }
 
                 if (tooltip != null)
                     tooltip.m_text = "";
