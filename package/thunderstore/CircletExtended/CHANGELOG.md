@@ -1,3 +1,8 @@
+# 1.1.13
+* Fixed Circlet upgrade station level requirements being reported as a generic missing requirement.
+* Circlet upgrades now use and display the vanilla progressive crafting station level requirements correctly.
+* Kept the configured repair station level independent from crafting and upgrade station levels.
+
 # 1.1.12
 * Undiscovered materials in Circlet upgrade recipes are now hidden until the player discovers them.
 * Added a configurable icon tint for undiscovered upgrade requirements.
