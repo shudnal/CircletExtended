@@ -33,6 +33,12 @@ namespace CircletExtended
             public Piece.Requirement[] Resources;
         }
 
+        private struct RecipeStationLevelPatchState
+        {
+            public Recipe Recipe;
+            public int MinStationLevel;
+        }
+
         public static void UpdateCompatibleHelmetLists()
         {
             helmetWhiteList.Clear();
@@ -201,7 +207,7 @@ namespace CircletExtended
             recipe = ScriptableObject.CreateInstance<Recipe>();
             recipe.name = itemNameHelmetDverger;
             recipe.m_amount = 1;
-            recipe.m_minStationLevel = Math.Min(circletRecipeCraftingStationLvl.Value, circletRecipeRepairStationLvl.Value); // Actual crafting level is overriden
+            recipe.m_minStationLevel = circletRecipeCraftingStationLvl.Value;
             recipe.m_item = item;
             recipe.m_enabled = true;
 
@@ -247,6 +253,24 @@ namespace CircletExtended
         {
             if (state.Recipe != null)
                 state.Recipe.m_resources = state.Resources;
+        }
+
+        private static void ApplyRepairStationLevel(ItemDrop.ItemData item, out RecipeStationLevelPatchState state)
+        {
+            state = default;
+
+            if (recipe == null || !IsCircletItemData(item))
+                return;
+
+            state.Recipe = recipe;
+            state.MinStationLevel = recipe.m_minStationLevel;
+            recipe.m_minStationLevel = circletRecipeRepairStationLvl.Value;
+        }
+
+        private static void RestoreStationLevel(RecipeStationLevelPatchState state)
+        {
+            if (state.Recipe != null)
+                state.Recipe.m_minStationLevel = state.MinStationLevel;
         }
 
         private static string GetRecipe(int quality)
@@ -574,11 +598,28 @@ namespace CircletExtended
         [HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetTooltip), typeof(ItemDrop.ItemData), typeof(int), typeof(bool), typeof(float), typeof(int), typeof(bool))]
         private static class ItemDropItemData_GetTooltip_ItemTooltip
         {
-            [HarmonyPriority(Priority.Last)]
-            private static void Postfix(ItemDrop.ItemData item, ref string __result)
+            [HarmonyPriority(Priority.First)]
+            private static void Prefix(ItemDrop.ItemData item, out RecipeStationLevelPatchState __state)
             {
+                ApplyRepairStationLevel(item, out __state);
+            }
+
+            [HarmonyPriority(Priority.Last)]
+            private static void Postfix(ItemDrop.ItemData item, RecipeStationLevelPatchState __state, ref string __result)
+            {
+                RestoreStationLevel(__state);
+
                 if (IsCircletItemData(item) && UseFuel())
                     __result = __result.Replace("$item_durability", "$piece_fire_fuel");
+            }
+
+            [HarmonyPriority(Priority.Last)]
+            private static Exception Finalizer(Exception __exception, RecipeStationLevelPatchState __state)
+            {
+                if (__exception != null)
+                    RestoreStationLevel(__state);
+
+                return __exception;
             }
         }
 
@@ -597,23 +638,28 @@ namespace CircletExtended
             }
         }
 
-        [HarmonyPatch(typeof(Recipe), nameof(Recipe.GetRequiredStationLevel))]
-        public static class Recipe_GetRequiredStationLevel_CraftingStationLevel
+        [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.CanRepair))]
+        public static class InventoryGui_CanRepair_CircletRepairStationLevel
         {
-            private static void Prefix(Recipe __instance, ref int __state)
+            [HarmonyPriority(Priority.First)]
+            private static void Prefix(ItemDrop.ItemData item, out RecipeStationLevelPatchState __state)
             {
-                __state = -1;
-                if (__instance != recipe)
-                    return;
-
-                __state = __instance.m_minStationLevel;
-                __instance.m_minStationLevel = circletRecipeCraftingStationLvl.Value;
+                ApplyRepairStationLevel(item, out __state);
             }
 
-            private static void Postfix(Recipe __instance, int __state)
+            [HarmonyPriority(Priority.Last)]
+            private static void Postfix(RecipeStationLevelPatchState __state)
             {
-                if (__state != -1)
-                    __instance.m_minStationLevel = __state;
+                RestoreStationLevel(__state);
+            }
+
+            [HarmonyPriority(Priority.Last)]
+            private static Exception Finalizer(Exception __exception, RecipeStationLevelPatchState __state)
+            {
+                if (__exception != null)
+                    RestoreStationLevel(__state);
+
+                return __exception;
             }
         }
 
