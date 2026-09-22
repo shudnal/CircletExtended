@@ -228,7 +228,7 @@ namespace CircletExtended
             circletRecipeCraftingEnabled = config("Circlet - Crafting", "Crafting enabled", defaultValue: true, "Enabled recipe to craft circlet.");
             circletRecipeCraftingStation = config("Circlet - Crafting", "Crafting station", defaultValue: "$piece_forge", "Where to craft circet. Leave empty to disable crafting but set repair station.");
             circletRecipeRepairStation = config("Circlet - Crafting", "Repair station", defaultValue: "$piece_forge", "Additional station where circet can be repaired. Crafting station is always used as well if set.");
-            circletRecipeCraftingStationLvl = config("Circlet - Crafting", "Crafting station lvl", defaultValue: 3, "Level of crafting station required");
+            circletRecipeCraftingStationLvl = config("Circlet - Crafting", "Crafting station lvl", defaultValue: 3, "Base crafting station level required. Upgrades follow vanilla rules and require one additional station level per quality.");
             circletRecipeRepairStationLvl = config("Circlet - Crafting", "Repair station lvl", defaultValue: 1, "Level of repair station required.");
 
             circletRecipeCraftingEnabled.SettingChanged += (sender, args) => CircletItem.FillRecipe();
